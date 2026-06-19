@@ -16,3 +16,9 @@ config/passwords.yaml
 
 # Firebase service account key for Firebase auth
 config/firebase_service_account_key.json
+
+
+# Ignore environment variable files
+.env
+.env.local
+.env.example

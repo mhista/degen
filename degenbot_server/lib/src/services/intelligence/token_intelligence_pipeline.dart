@@ -26,7 +26,6 @@
 // THIS IS WHERE THE "SMART" IN SMART BOT LIVES.
 
 import 'dart:convert';
-import 'package:logging/logging.dart';
 import 'package:dartantic_ai/dartantic_ai.dart';
 import 'package:degenbot_server/src/config/env.dart';
 import 'package:degenbot_server/src/services/dex/dexscreener_service.dart';
@@ -37,8 +36,7 @@ import 'rugcheck_service.dart';
 import 'tokensniffer_service.dart';
 import 'chaingpt_service.dart';
 import 'onchain_forensics_service.dart';
-
-final _log = Logger('TokenIntelligencePipeline');
+import 'package:degenbot_server/degen_logger.dart';
 
 /// Type alias for GoPlus's return tuple — keeps the nullable variable
 /// declaration above readable.
@@ -77,7 +75,7 @@ class TokenIntelligencePipeline {
     required String contractAddress,
     required String chain,
   }) async {
-    _log.info('═══ Analyzing $contractAddress on $chain ═══');
+    Log.info('🔍 Starting full pipeline analysis for token: $contractAddress on chain: $chain');
     final allFlags = <IntelligenceFlag>[];
 
     // Load every toggle once — one Supabase query instead of seven scattered
@@ -87,6 +85,7 @@ class TokenIntelligencePipeline {
 
     // ── STEP 1: Market data (always needed, cheap, fast) ──────────────────
     if (!(enabled[FeatureFlag.dexScreener] ?? true)) {
+      Log.warning('   DexScreener is disabled via feature flags — aborting analysis');
       return _errorReport(
         contractAddress,
         chain,
@@ -94,12 +93,14 @@ class TokenIntelligencePipeline {
       );
     }
 
+    Log.info('📊 Fetching market data from DexScreener...');
     final pairs = await _dex.getTokenData(
       contractAddress: contractAddress,
       chain: chain,
     );
 
     if (pairs.isEmpty) {
+      Log.warning('   No DexScreener pairs found for $contractAddress');
       return _errorReport(
         contractAddress,
         chain,
@@ -125,38 +126,44 @@ class TokenIntelligencePipeline {
       pairAddress: pair['pairAddress'] as String? ?? '',
       dexId: pair['dexId'] as String? ?? 'unknown',
     );
+    Log.success('   Market data loaded: $tokenName ($tokenSymbol) | Price: \$${market.priceUsd} | Liquidity: \$${market.liquidityUsd}');
 
     // ── STEP 2: HARD GATE — Safety checks (run first, can short-circuit) ──
-    _log.info('Running safety checks (Layer 2)...');
+    Log.info('🛡️ Running contract safety checks (Layer 2)...');
 
     GoPlusResultType? goplusResult;
     if (enabled[FeatureFlag.goPlus] ?? true) {
+      Log.debug('   Checking GoPlus Security API...');
       goplusResult = await _goplus.checkToken(
         contractAddress: contractAddress,
         chain: chain,
       );
       allFlags.addAll(goplusResult.flags);
+      Log.info('   GoPlus: found ${goplusResult.flags.length} flag(s). isHoneypot: ${goplusResult.data.isHoneypot}');
     } else {
-      _log.info('GoPlus disabled via feature flag — skipping');
+      Log.info('   GoPlus disabled via feature flag — skipping safety scan');
     }
 
     // RugCheck only applies to Solana, and only if enabled
     int? rugCheckScore;
     OwnershipData? rugCheckOwnership;
     if (chain == 'solana' && (enabled[FeatureFlag.rugCheck] ?? true)) {
+      Log.debug('   Checking Solana RugCheck API...');
       final rugResult = await _rugcheck.checkToken(contractAddress);
       if (rugResult != null) {
         allFlags.addAll(rugResult.flags);
         rugCheckScore = rugResult.score;
         rugCheckOwnership = rugResult.ownership;
+        Log.info('   RugCheck: score: $rugCheckScore | found ${rugResult.flags.length} flag(s)');
       }
     } else if (chain == 'solana') {
-      _log.info('RugCheck disabled via feature flag — skipping');
+      Log.info('   RugCheck disabled via feature flag — skipping safety scan');
     }
 
     // TokenSniffer for EVM chains — opt-in, paid, off by default
     int? snifferScore;
     if (enabled[FeatureFlag.tokenSniffer] ?? false) {
+      Log.debug('   Checking TokenSniffer API...');
       final snifferResult = await _tokenSniffer.checkToken(
         contractAddress: contractAddress,
         chain: chain,
@@ -164,6 +171,7 @@ class TokenIntelligencePipeline {
       if (snifferResult != null) {
         allFlags.addAll(snifferResult.flags);
         snifferScore = snifferResult.score;
+        Log.info('   TokenSniffer: score: $snifferScore | found ${snifferResult.flags.length} flag(s)');
       }
     }
 
@@ -182,6 +190,7 @@ class TokenIntelligencePipeline {
     );
 
     if (goplusResult == null && rugCheckScore == null) {
+      Log.warning('⚠️ Both GoPlus and RugCheck are disabled — proceeding with NO safety verification. This is highly risky!');
       allFlags.add(const IntelligenceFlag(
         source: 'Pipeline',
         severity: FlagSeverity.high,
@@ -195,9 +204,12 @@ class TokenIntelligencePipeline {
     // are already disqualified. Fail fast, fail cheap.
     final criticalFlags = allFlags.where((f) => f.isCritical).toList();
     if (criticalFlags.isNotEmpty) {
-      _log.warning(
-        '${criticalFlags.length} critical flag(s) — rejecting without further analysis',
+      Log.warning(
+        '❌ [Safety Gate] ${criticalFlags.length} critical flag(s) found! Rejecting token immediately to save API costs.',
       );
+      for (final f in criticalFlags) {
+        Log.warning('   Critical Flag: [${f.source}] ${f.message}');
+      }
       return TokenIntelligenceReport(
         chain: chain,
         contractAddress: contractAddress,
@@ -213,12 +225,13 @@ class TokenIntelligencePipeline {
         safety: safety,
       );
     }
+    Log.success('   Safety gate passed with zero critical flags');
 
     // ── STEP 3-5: Run remaining layers IN PARALLEL ─────────────────────────
     // These don't depend on each other, so we fire all requests at once
     // instead of waiting for each one sequentially. This is the difference
     // between a 6-second analysis and a 2-second analysis.
-    _log.info('Running ownership, sentiment, and on-chain layers in parallel...');
+    Log.info('⚡ Running ownership, sentiment, and on-chain layers in parallel...');
 
     final onChainFuture = (enabled[FeatureFlag.onChainForensics] ?? true)
         ? _onChain.analyze(contractAddress: contractAddress, chain: chain)
@@ -243,14 +256,18 @@ class TokenIntelligencePipeline {
     final sentimentResult = await sentimentFuture;
 
     allFlags.addAll(onChainResult.flags);
-    if (sentimentResult != null) allFlags.addAll(sentimentResult.flags);
+    if (sentimentResult != null) {
+      allFlags.addAll(sentimentResult.flags);
+      Log.info('   ChainGPT sentiment: ${sentimentResult.data.sentimentLabel} | KOL mentions: ${sentimentResult.data.kolMentionCount}');
+    }
+    Log.info('   OnChain forensics: washTrading: ${onChainResult.data.isWashTrading} | clusters: ${onChainResult.data.walletClusterCount}');
 
     final ownership = rugCheckOwnership ?? _defaultOwnership();
 
     // ── STEP 6: Hand everything to the AI for final scoring ───────────────
     final aiVerdict = (enabled[FeatureFlag.aiScoring] ?? true)
         ? await (() async {
-            _log.info('Sending complete dossier to AI scoring engine...');
+            Log.info('🧠 Sending complete token dossier to AI scoring engine...');
             return _runAiScoring(
               tokenName: tokenName,
               tokenSymbol: tokenSymbol,
@@ -270,6 +287,7 @@ class TokenIntelligencePipeline {
                 'gathered but no verdict produced. Enable ai_scoring to get a decision.',
           );
 
+    Log.success('🏆 Analysis complete for $tokenSymbol! Verdict: ${aiVerdict.verdict.name.toUpperCase()} | Score: ${aiVerdict.score}');
     return TokenIntelligenceReport(
       chain: chain,
       contractAddress: contractAddress,
@@ -352,8 +370,8 @@ Respond with ONLY valid JSON in this exact shape, no other text:
         ChatMessage.system( systemPrompt),
       ]);
       return _parseAiResponse(result.output ?? '');
-    } catch (e) {
-      _log.severe('AI scoring failed', e);
+    } catch (e, st) {
+      Log.error('❌ AI scoring agent request failed', error: e, stackTrace: st);
       // Conservative fallback: if AI fails, don't buy blind
       return (
         verdict: TokenVerdict.watch,
@@ -443,7 +461,7 @@ Provide your score, verdict, and reasoning as JSON.
 
       return (verdict: verdict, score: score, reasoning: reasoning);
     } catch (e) {
-      _log.warning('Failed to parse AI response: $raw', e);
+      Log.warning('Failed to parse AI response: $raw',data:  e);
       return (
         verdict: TokenVerdict.watch,
         score: 40,

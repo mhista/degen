@@ -29,7 +29,6 @@
 //   Step 3 will move this to Supabase for persistence.
 
 import 'dart:convert';
-import 'package:logging/logging.dart';
 import 'package:televerse/telegram.dart';
 import 'package:televerse/televerse.dart';
 import 'package:dartantic_ai/dartantic_ai.dart';
@@ -37,8 +36,7 @@ import 'package:degenbot_server/src/config/env.dart';
 import 'package:degenbot_server/src/services/repository/user_repository.dart';
 import 'package:degenbot_server/src/services/repository/trade_repository.dart';
 import 'package:degenbot_server/src/services/dex/dexscreener_service.dart';
-
-final _log = Logger('AiHandler');
+import 'package:degenbot_server/degen_logger.dart';
 
 class AiHandler {
   final Bot _bot;
@@ -67,7 +65,7 @@ class AiHandler {
     if (telegramUser == null || text == null || text.trim().isEmpty) return;
 
     final telegramId = telegramUser.id;
-    _log.fine('AI message from $telegramId: $text');
+    Log.info('📩 [AI Handler] Message from Telegram ID $telegramId: "$text"');
 
     // Show typing indicator while AI thinks
     await ctx.api.sendChatAction(
@@ -77,13 +75,17 @@ class AiHandler {
 
     try {
       final agent = _getOrCreateAgent(telegramId);
+      Log.debug('Sending query to LLM for user $telegramId...');
+      
       // send system prompt message first to ensure context is set
-     final result = await agent.send(text, history: [
+      final result = await agent.send(text, history: [
         ChatMessage.system(_buildSystemPrompt()),
       ]);
+      
+      Log.success('LLM response generated for user $telegramId: "${result.output}"');
       await ctx.reply(result.output ?? "I couldn't process that. Try again.");
     } catch (e, st) {
-      _log.severe('AI handler error for $telegramId', e, st);
+      Log.error('Error in AI handler for user $telegramId', error: e, stackTrace: st);
       await ctx.reply(
         '⚠️ Something went wrong. Try again or use a command like /help.',
       );
@@ -97,6 +99,7 @@ class AiHandler {
   }
 
   Agent _buildAgent(int telegramId) {
+    Log.info('Initializing new AI agent session for user $telegramId using provider: ${Env.aiProvider}');
     // Select provider based on config
     Provider agent = switch (Env.aiProvider) {
       'openai' => OpenAIProvider(apiKey: Env.openaiApiKey),
@@ -105,7 +108,6 @@ class AiHandler {
     };
 
     return Agent.forProvider(agent,
-       
         tools: _buildTools(telegramId),
     );
   }
@@ -151,14 +153,18 @@ Keep responses under 300 words unless the user asks for detail.
           'bot active state, open positions count, trades today, risk settings.',
      // no inputs needed — telegramId is captured in closure
       onCall: (_) async {
+        Log.info('🛠️ [AI Tool] Executing getUserStatus for user $telegramId');
         final user = await _users.findByTelegramId(telegramId);
-        if (user == null) return 'User not found';
+        if (user == null) {
+          Log.warning('   getUserStatus: User not found for Telegram ID $telegramId');
+          return 'User not found';
+        }
 
         final openTrades = await _trades.getOpenTrades(user.id!);
         final risk = await _trades.getRiskProfile(user.id!);
         final today = await _trades.countTradesToday(user.id!);
 
-        return jsonEncode({
+        final status = {
           'chain': user.activeChain,
           'wallet': user.walletAddress ?? 'not set',
           'bot_active': user.isBotActive,
@@ -168,7 +174,9 @@ Keep responses under 300 words unless the user asks for detail.
           'max_trade_percent': risk.maxTradePercent,
           'take_profit_percent': risk.defaultTakeProfitPercent,
           'stop_loss_percent': risk.defaultStopLossPercent,
-        });
+        };
+        Log.success('   getUserStatus: Success. Data: $status');
+        return jsonEncode(status);
       }, 
     ),
 
@@ -191,20 +199,30 @@ Keep responses under 300 words unless the user asks for detail.
         
       }),
       onCall: (args) async {
+        Log.info('🛠️ [AI Tool] Executing getTradeHistory for user $telegramId with args: $args');
         final limit = ((args as Map<String, dynamic>)['limit'] as int?) ?? 5;
         final user = await _users.findByTelegramId(telegramId);
-        if (user == null) return 'User not found';
+        if (user == null) {
+          Log.warning('   getTradeHistory: User not found for Telegram ID $telegramId');
+          return 'User not found';
+        }
 
         final trades = await _trades.getTradeHistory(user.id!, limit: limit);
-        if (trades.isEmpty) return 'No trade history yet.';
+        if (trades.isEmpty) {
+          Log.info('   getTradeHistory: No trade history found for user ${user.id}');
+          return 'No trade history yet.';
+        }
 
-        return jsonEncode(trades.map((t) => {
+        final result = trades.map((t) => {
           'symbol': t.symbol,
           'pnl_usd': t.realizedPnlUsd,
           'roi_percent': t.roiPercent,
           'close_reason': t.closeReason,
           'sold_at': t.soldAt?.toIso8601String(),
-        }).toList());
+        }).toList();
+        
+        Log.success('   getTradeHistory: Found ${result.length} trade record(s)');
+        return jsonEncode(result);
       },
     ),
 
@@ -227,22 +245,30 @@ Keep responses under 300 words unless the user asks for detail.
         'required': ['chain'],
       }),
       onCall: (args) async {
+        Log.info('🛠️ [AI Tool] Executing scanTrending for user $telegramId with args: $args');
         final user = await _users.findByTelegramId(telegramId);
         final chain = ((args as Map<String, dynamic>)['chain'] as String?) ?? user?.activeChain ?? 'solana';
 
         try {
           final coins = await _dex.getTrendingCoins(chain: chain, limit: 5);
-          if (coins.isEmpty) return 'No trending coins found right now.';
+          if (coins.isEmpty) {
+            Log.info('   scanTrending: No trending coins returned from DexScreener');
+            return 'No trending coins found right now.';
+          }
 
-          return jsonEncode(coins.map((c) => {
+          final result = coins.map((c) => {
             'name': c['name'],
             'symbol': c['symbol'],
             'price_usd': c['priceUsd'],
-            'change_24h': c['priceChange']['h24'],
-            'volume_24h': c['volume']['h24'],
+            'change_24h': c['priceChange']?['h24'],
+            'volume_24h': c['volume']?['h24'],
             'liquidity_usd': c['liquidity']?['usd'],
-          }).toList());
+          }).toList();
+          
+          Log.success('   scanTrending: Successfully found ${result.length} trending coins');
+          return jsonEncode(result);
         } catch (e) {
+          Log.error('   scanTrending: Failed to scan trending coins', error: e);
           return 'DexScreener scan failed: $e';
         }
       },
@@ -275,10 +301,14 @@ Keep responses under 300 words unless the user asks for detail.
         },
       },}),
       onCall: (args) async {
+        Log.info('🛠️ [AI Tool] Executing updateRiskSetting for user $telegramId with args: $args');
         final field = ((args as Map<String, dynamic>)['field'] as String?) ?? '';
         final value = ((args as Map<String, dynamic>)['value'] as num).toDouble();
         final user = await _users.findByTelegramId(telegramId);
-        if (user == null) return 'User not found';
+        if (user == null) {
+          Log.warning('   updateRiskSetting: User not found for Telegram ID $telegramId');
+          return 'User not found';
+        }
 
         final profile = await _trades.getRiskProfile(user.id!);
 
@@ -295,6 +325,7 @@ Keep responses under 300 words unless the user asks for detail.
         };
 
         await _trades.updateRiskProfile(updated);
+        Log.success('   updateRiskSetting: Successfully updated risk setting $field to $value');
         return jsonEncode({'success': true, 'field': field, 'new_value': value});
       },
     ),

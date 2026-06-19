@@ -29,34 +29,71 @@ import 'package:degenbot_server/src/generated/protocol.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:degenbot_server/src/config/env.dart';
 import 'package:degenbot_server/src/bot/telegram_bot.dart';
+import 'package:degenbot_server/src/services/repository/supabase_client.dart';
+import 'package:degenbot_server/degen_logger.dart';
+import 'package:logging/logging.dart' as logging;
 // import 'package:degenbot_server/src/endpoints/user_endpoint.dart';
 // import 'package:degenbot_server/src/endpoints/trade_endpoint.dart';
 // import 'package:degenbot_server/src/endpoints/health_endpoint.dart';
 import 'package:degenbot_server/src/web/routes/telegram_routes.dart';
 
-import 'src/services/repository/supabase_client.dart';
+void setupLogging() {
+  logging.Logger.root.level = logging.Level.ALL;
+  logging.Logger.root.onRecord.listen((record) {
+    if (record.level >= logging.Level.SEVERE) {
+      Log.error(
+        '${record.loggerName}: ${record.message}',
+        error: record.error,
+        stackTrace: record.stackTrace,
+      );
+    } else if (record.level >= logging.Level.WARNING) {
+      Log.warning('${record.loggerName}: ${record.message}');
+    } else if (record.level >= logging.Level.INFO) {
+      Log.info('${record.loggerName}: ${record.message}');
+    } else {
+      Log.debug('${record.loggerName}: ${record.message}');
+    }
+  });
+}
 
 /// The starting point of the Serverpod server.
 void run(List<String> args) async {
-  // 1. Initialize Supabase client
-  await initSupabase();
+  // 1. Initialize logging
+  setupLogging();
+  Log.startup('DegenBot server is booting up...');
 
-  // 2. Start the Telegram Bot
-  final bot = DegenTelegramBot();
-  await bot.start(webhookBaseUrl: Env.webhookBaseUrl);
+  try {
+    // 2. Initialize Supabase client
+    Log.startupInfo('Connecting to Supabase database...');
+    await initSupabase();
+    Log.startupSuccess('Database client successfully ready');
 
-  // 3. Initialize Serverpod and connect it with your generated code.
-  final pod = Serverpod(
-    args,
-    Protocol(),
-    Endpoints(),
-  );
+    // 3. Start the Telegram Bot
+    Log.startupInfo('Starting Telegram Bot with token: ${Env.telegramToken.substring(0, Env.telegramToken.length > 5 ? 5 : Env.telegramToken.length)}...');
+    final bot = DegenTelegramBot();
+    await bot.start(webhookBaseUrl: Env.webhookBaseUrl);
+    Log.startupSuccess('Telegram bot service started');
 
-  // ── Telegram webhook route ──────────────────────────────────────────────
-  pod.webServer.addRoute(TelegramWebhookRoute(), '/webhooks/telegram');
+    // 4. Initialize Serverpod and connect it with your generated code.
+    Log.startupInfo('Configuring Serverpod instance...');
+    final pod = Serverpod(
+      args,
+      Protocol(),
+      Endpoints(),
+    );
 
-  // Start the server.
-  await pod.start();
+    // ── Telegram webhook route ──────────────────────────────────────────────
+    pod.webServer.addRoute(TelegramWebhookRoute(), '/webhooks/telegram');
+
+    // Start the server.
+    Log.startupSuccess('Starting Serverpod Mini server...');
+    await pod.start();
+    Log.startupSuccess('Serverpod Mini running on port ${Env.serverPort}');
+  } catch (e, stackTrace) {
+    Log.startupError('Fatal error starting Serverpod server', error: e);
+    Log.error('Initialization crash', error: e, stackTrace: stackTrace);
+    rethrow;
+  }
 }
 
 // Future<Serverpod> createServer({required int port}) async {
