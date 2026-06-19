@@ -11,8 +11,15 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
-import 'greetings/greeting.dart' as _i2;
-export 'greetings/greeting.dart';
+import 'coin_candidate.dart' as _i2;
+import 'risk_profile.dart' as _i3;
+import 'trade.dart' as _i4;
+import 'user.dart' as _i5;
+import 'package:degenbot_client/src/protocol/trade.dart' as _i6;
+export 'coin_candidate.dart';
+export 'risk_profile.dart';
+export 'trade.dart';
+export 'user.dart';
 export 'client.dart';
 
 class Protocol extends _i1.SerializationManager {
@@ -49,18 +56,48 @@ class Protocol extends _i1.SerializationManager {
       }
     }
 
-    if (t == _i2.Greeting) {
-      return _i2.Greeting.fromJson(data) as T;
+    if (t == _i2.CoinCandidate) {
+      return _i2.CoinCandidate.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i2.Greeting?>()) {
-      return (data != null ? _i2.Greeting.fromJson(data) : null) as T;
+    if (t == _i3.RiskProfile) {
+      return _i3.RiskProfile.fromJson(data) as T;
+    }
+    if (t == _i4.Trade) {
+      return _i4.Trade.fromJson(data) as T;
+    }
+    if (t == _i5.User) {
+      return _i5.User.fromJson(data) as T;
+    }
+    if (t == _i1.getType<_i2.CoinCandidate?>()) {
+      return (data != null ? _i2.CoinCandidate.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i3.RiskProfile?>()) {
+      return (data != null ? _i3.RiskProfile.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i4.Trade?>()) {
+      return (data != null ? _i4.Trade.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i5.User?>()) {
+      return (data != null ? _i5.User.fromJson(data) : null) as T;
+    }
+    if (t == Map<String, dynamic>) {
+      return (data as Map).map(
+            (k, v) => MapEntry(deserialize<String>(k), deserialize<dynamic>(v)),
+          )
+          as T;
+    }
+    if (t == List<_i6.Trade>) {
+      return (data as List).map((e) => deserialize<_i6.Trade>(e)).toList() as T;
     }
     return super.deserialize<T>(data, t);
   }
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i2.Greeting => 'Greeting',
+      _i2.CoinCandidate => 'CoinCandidate',
+      _i3.RiskProfile => 'RiskProfile',
+      _i4.Trade => 'Trade',
+      _i5.User => 'User',
       _ => null,
     };
   }
@@ -75,8 +112,14 @@ class Protocol extends _i1.SerializationManager {
     }
 
     switch (data) {
-      case _i2.Greeting():
-        return 'Greeting';
+      case _i2.CoinCandidate():
+        return 'CoinCandidate';
+      case _i3.RiskProfile():
+        return 'RiskProfile';
+      case _i4.Trade():
+        return 'Trade';
+      case _i5.User():
+        return 'User';
     }
     return null;
   }
@@ -87,8 +130,17 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
-    if (dataClassName == 'Greeting') {
-      return deserialize<_i2.Greeting>(data['data']);
+    if (dataClassName == 'CoinCandidate') {
+      return deserialize<_i2.CoinCandidate>(data['data']);
+    }
+    if (dataClassName == 'RiskProfile') {
+      return deserialize<_i3.RiskProfile>(data['data']);
+    }
+    if (dataClassName == 'Trade') {
+      return deserialize<_i4.Trade>(data['data']);
+    }
+    if (dataClassName == 'User') {
+      return deserialize<_i5.User>(data['data']);
     }
     return super.deserializeByClassName(data);
   }

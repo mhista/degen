@@ -80,10 +80,7 @@ class DegenTelegramBot {
     _commands = CommandHandlers(_telegramService.bot);
     _ai = AiHandler(_telegramService.bot);
 
-    // ── Middleware ───────────────────────────────────────────────────────
-    // Runs before EVERY handler. Ensures the user exists in our DB.
-    // If they don't exist yet, creates them automatically.
-    _telegramService.bot.use(UserMiddleware(bot: _telegramService.bot).call.call);
+    _telegramService.bot.use(const UserMiddleware().handle);
 
     // ── Command handlers ────────────────────────────────────────────────
     _commands.register();

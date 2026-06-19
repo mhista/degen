@@ -23,16 +23,10 @@ import 'package:televerse/televerse.dart';
 final _log = Logger('UserMiddleware');
 
 class UserMiddleware {
-  final Bot _bot;
-  UserMiddleware({
-    required Bot bot,
-  }): _bot = bot;
+  const UserMiddleware();
   final _users = const UserRepository();
 
-  /// Returns a Televerse-compatible middleware function.
-  Bot get call => _bot.use(_handle);
-
-  Future<void> _handle(Context ctx, NextFunction next) async {
+  Future<void> handle(Context ctx, NextFunction next) async {
     final telegramUser = ctx.update.message?.from
         ?? ctx.update.callbackQuery?.from;
 
