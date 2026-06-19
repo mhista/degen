@@ -1,0 +1,50 @@
+##
+## user.spy.yaml — DegenBot User model
+##
+## Serverpod reads this YAML and generates:
+##   • A Dart class (degenbot_server/lib/src/generated/user.dart)
+##   • A matching client class (degenbot_client/lib/src/generated/user.dart)
+##
+## We then write a UserDto (in services/dto/) that maps this model to/from
+## a Supabase row. This keeps Serverpod and Supabase completely decoupled —
+## swap either side without touching the other.
+##
+## Field rules:
+##   - id is always int? (nullable) on Serverpod models — Supabase assigns it.
+##   - Use String for UUIDs/addresses (Solana/Ethereum address is a plain String).
+##   - Sensitive fields (privateKey) are NEVER stored here — stored encrypted
+##     in Supabase vault or passed ephemerally through the session.
+##
+
+class: User
+# table: users
+fields:
+  id: int? # Supabase assigns this automatically
+  # Telegram user ID — our primary external identifier
+  telegramId: int
+
+  # Human-readable username from Telegram (may be null if user has no @handle)
+  telegramUsername: String?
+
+  # Which blockchain network the user is currently operating on
+  # Values: 'solana' | 'ethereum' | 'bnb'
+  activeChain: String
+
+  # The public wallet address for the active chain
+  walletAddress: String?
+
+  # Subscription tier controls how many trades per day are allowed
+  # Values: 'free' | 'basic' | 'pro'
+  subscriptionTier: String
+
+  # Whether the bot is currently active for this user
+  isBotActive: bool
+
+  # Timestamps
+  createdAt: DateTime
+  updatedAt: DateTime
+
+indexes:
+  user_telegram_id_idx:
+    fields: telegramId
+    unique: true

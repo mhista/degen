@@ -1,0 +1,44 @@
+##
+## risk_profile.spy.yaml — Per-user risk management configuration.
+##
+## The risk manager service reads this before every trade to decide:
+##   1. How much of the wallet balance to risk per trade
+##   2. How many trades to allow per day
+##   3. Default take-profit and stop-loss percentages
+##
+## Users can adjust these via Telegram commands like:
+##   /risk set max_per_trade 5
+##   /risk set daily_limit 10
+##
+
+class: RiskProfile
+# table: risk_profiles
+fields:
+  id: int? # Supabase assigns this automatically
+  # One-to-one with users
+  userId: int
+
+  # Maximum percentage of wallet balance to spend on a single trade (1–100)
+  maxTradePercent: double
+
+  # Maximum number of trades allowed per day (enforced by risk manager)
+  dailyTradeLimit: int
+
+  # How many trades have been executed today (reset at UTC midnight)
+  tradesToday: int
+
+  # Default take-profit: sell when price rises by this % above buy price
+  defaultTakeProfitPercent: double
+
+  # Default stop-loss: sell when price falls by this % below buy price
+  defaultStopLossPercent: double
+
+  # The date tradesToday was last reset (used to detect day rollover)
+  lastResetDate: DateTime
+
+  updatedAt: DateTime
+
+indexes:
+  risk_profile_user_idx:
+    fields: userId
+    unique: true

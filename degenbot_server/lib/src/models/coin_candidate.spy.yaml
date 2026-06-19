@@ -1,0 +1,63 @@
+##
+## coin_candidate.spy.yaml — A coin that has been evaluated by the AI scanner.
+##
+## Lifecycle:
+##   1. AI scanner finds a new coin on DexScreener
+##   2. Evaluates it against all criteria → produces a CoinCandidate
+##   3. Saved to Supabase (status: 'pending')
+##   4. Trading bot picks it up, buys it → status becomes 'bought'
+##   5. When sold (profit or stop-loss) → status becomes 'closed'
+##
+## This model is the handoff point between the AI feature and the bot.
+##
+
+class: CoinCandidate
+# table: coin_candidates
+fields:
+  # id in integer
+  id: int? 
+  # The blockchain this coin lives on: 'solana' | 'ethereum' | 'bnb'
+  chain: String
+
+  # The token's contract address (unique identifier on its chain)
+  contractAddress: String
+
+  # Human-readable name, e.g. "PepeCoin"
+  name: String
+
+  # Trading symbol, e.g. "PEPE"
+  symbol: String
+
+  # AI confidence score 0–100. Higher = stronger buy signal.
+  aiScore: int
+
+  # Raw DexScreener metrics captured at scan time
+  liquidityUsd: double
+  volumeUsd24h: double
+  priceUsd: double
+  marketCapUsd: double?
+  holderCount: int?
+
+  # Price change percentages from DexScreener
+  priceChange1h: double?
+  priceChange6h: double?
+  priceChange24h: double?
+
+  # AI reasoning — a short natural language explanation of why this coin scored
+  # well. Shown to the user when they ask "why did you buy X?".
+  aiReasoning: String?
+
+  # Lifecycle status: 'pending' | 'bought' | 'closed' | 'rejected'
+  status: String
+
+  # When the AI evaluated this coin
+  scannedAt: DateTime
+
+indexes:
+  coin_candidate_contract_idx:
+    fields: contractAddress, chain
+    unique: true
+  coin_candidate_status_idx:
+    fields: status
+  coin_candidate_score_idx:
+    fields: aiScore

@@ -1,0 +1,80 @@
+##
+## trade.spy.yaml — A trade (buy→sell cycle) executed by the bot.
+##
+## One Trade record = one full round trip: buy in, sell out (or stop-loss).
+## The risk manager reads this table to enforce daily trade limits and
+## calculate ROI. The user's Telegram dashboard reads it to show history.
+##
+
+class: Trade
+# table: trades
+fields:
+  # id is integer, assigned by Supabase
+  id: int?
+  # Foreign key → users.id (Supabase integer PK)
+  userId: int
+
+  # The coin that was traded
+  coinCandidateId: int
+
+  # Blockchain and address for reference (denormalised for quick reads)
+  chain: String
+  contractAddress: String
+  symbol: String
+
+  # ── Buy side ────────────────────────────────────────────────────────────────
+  # Amount of the parent token (SOL / ETH / BNB) spent on this buy
+  amountSpentNative: double
+
+  # USD equivalent at time of purchase
+  amountSpentUsd: double
+
+  # Price per token at time of purchase
+  buyPriceUsd: double
+
+  # On-chain transaction hash of the buy transaction
+  buyTxHash: String?
+
+  # When the buy executed
+  boughtAt: DateTime?
+
+  # ── Sell side ────────────────────────────────────────────────────────────────
+  # Price per token at time of sale
+  sellPriceUsd: double?
+
+  # On-chain transaction hash of the sell transaction
+  sellTxHash: String?
+
+  # When the sell executed (null if trade still open)
+  soldAt: DateTime?
+
+  # ── Risk management ──────────────────────────────────────────────────────────
+  # Target take-profit price (set by AI at buy time)
+  takeProfitPriceUsd: double?
+
+  # Stop-loss price (set by risk manager at buy time)
+  stopLossPriceUsd: double?
+
+  # ── Outcome ──────────────────────────────────────────────────────────────────
+  # Profit/loss in USD (negative = loss). Null while trade is open.
+  realizedPnlUsd: double?
+
+  # Return on investment percentage. Null while trade is open.
+  roiPercent: double?
+
+  # Why the trade closed: 'take_profit' | 'stop_loss' | 'manual' | null (open)
+  closeReason: String?
+
+  # Trade status: 'open' | 'closed' | 'failed'
+  status: String
+
+  createdAt: DateTime
+  updatedAt: DateTime
+
+indexes:
+  trade_user_idx:
+    fields: userId
+  trade_status_idx:
+    fields: status
+  trade_user_date_idx:
+    fields: userId, createdAt

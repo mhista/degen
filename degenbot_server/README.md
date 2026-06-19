@@ -285,7 +285,7 @@ See `docs/research_roadmap.md` for the detailed list of open questions and gaps 
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `serverpod_mini` | ^3.4.0 | HTTP server, endpoint routing, client codegen |
+| `serverpod` | ^3.4.0 | HTTP server, endpoint routing, client codegen |
 | `supabase` | ^2.9.0 | Postgres database via REST |
 | `televerse` | ^2.3.2 | Telegram Bot API |
 | `dartantic_ai` | ^0.10.0 | Agentic AI framework (tool calling, multi-turn) |

@@ -1,0 +1,14 @@
+health:
+  - check:
+trade:
+  - getHistory:
+  - getOpenPositions:
+  - getRiskProfile:
+  - updateRiskSetting:
+  - getSummaryStats:
+user:
+  - registerOrGet:
+  - setBotActive:
+  - setWalletAddress:
+  - setActiveChain:
+  - getStatus:
