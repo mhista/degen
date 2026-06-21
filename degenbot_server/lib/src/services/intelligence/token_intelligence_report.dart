@@ -71,6 +71,8 @@ class MarketData {
     required this.buySellRatio,
     required this.pairAddress,
     required this.dexId,
+     required this.buyCount24h,   // NEW
+    required this.sellCount24h, 
   });
 
   final double priceUsd;
@@ -91,6 +93,86 @@ class MarketData {
 
   final String pairAddress;
   final String dexId;
+
+    /// Raw 24h buy transaction count (not the ratio — the actual number).
+  final int? buyCount24h;
+
+  /// Raw 24h sell transaction count.
+  final int? sellCount24h;
+
+  @override
+  toString() {
+    return 'MarketData('
+        'priceUsd: $priceUsd, '
+        'liquidityUsd: $liquidityUsd, '
+        'volumeUsd24h: $volumeUsd24h, '
+        'marketCapUsd: $marketCapUsd, '
+        'holderCount: $holderCount, '
+        'tokenAgeHours: $tokenAgeHours, '
+        'priceChange1h: $priceChange1h, '
+        'priceChange6h: $priceChange6h, '
+        'priceChange24h: $priceChange24h, '
+        'buySellRatio: $buySellRatio, '
+        'pairAddress: $pairAddress, '
+        'dexId: $dexId, '
+        'buyCount24h: $buyCount24h, '
+        'sellCount24h: $sellCount24h'
+        ')';
+  }
+}
+
+
+/// Independent honeypot.is simulation result — separate from GoPlus's
+/// SafetyData on purpose. When these two disagree, that disagreement
+/// itself is meaningful and should be visible in the report rather than
+/// silently merged into one "safety" verdict.
+class HoneypotData {
+  const HoneypotData({
+    required this.isHoneypot,
+    required this.riskLevel,
+    required this.riskLabel,
+    required this.simulationSuccess,
+    required this.buyTaxPercent,
+    required this.sellTaxPercent,
+    required this.transferTaxPercent,
+    required this.isOpenSource,
+    required this.isProxy,
+    required this.totalHolders,
+    required this.tokenName,
+    required this.tokenSymbol,
+  });
+
+  final bool isHoneypot;
+  final int riskLevel;       // 0-3+ from honeypot.is's own summary
+  final String riskLabel;    // 'low' | 'medium' | 'high' etc.
+  final bool simulationSuccess;
+  final double buyTaxPercent;
+  final double sellTaxPercent;
+  final double transferTaxPercent;
+  final bool isOpenSource;
+  final bool isProxy;
+  final int? totalHolders;
+  final String? tokenName;
+  final String? tokenSymbol;
+
+
+  @override
+  String toString() {
+    return 'HoneypotData('
+        'isHoneypot: $isHoneypot, '
+        'riskLevel: $riskLevel, '
+        'riskLabel: $riskLabel, ' 
+        'simulationSuccess: $simulationSuccess, '
+        'buyTaxPercent: $buyTaxPercent, '
+        'sellTaxPercent: $sellTaxPercent, '
+        'transferTaxPercent: $transferTaxPercent, '
+        'isOpenSource: $isOpenSource, '
+        'isProxy: $isProxy, '
+        'totalHolders: $totalHolders, '
+        'tokenName: $tokenName, '
+        'tokenSymbol: $tokenSymbol'
+        ')';
+  }
 }
 
 /// Layer 2 — Safety check results.
@@ -142,6 +224,23 @@ class SafetyData {
   /// Raw flags from GoPlus API (e.g. 'is_honeypot', 'can_take_back_ownership').
   final List<String> goplusFlags;
 
+  @override
+  String toString() {
+    return 'SafetyData('
+        'isHoneypot: $isHoneypot, '
+        'isBlacklisted: $isBlacklisted, '
+        'hasMintFunction: $hasMintFunction, '
+        'hasProxyContract: $hasProxyContract, '
+        'buyTaxPercent: $buyTaxPercent, '
+        'sellTaxPercent: $sellTaxPercent, '
+        'isContractVerified: $isContractVerified, '
+        'isClonedContract: $isClonedContract, '
+        'tokenSnifferScore: $tokenSnifferScore, '
+        'rugCheckScore: $rugCheckScore, '
+        'goplusFlags: $goplusFlags'
+        ')';
+  }
+
   bool get hasCriticalFlag =>
       isHoneypot || isBlacklisted || sellTaxPercent > 30 || isClonedContract;
 }
@@ -177,6 +276,19 @@ class OwnershipData {
   final double deployerHoldingPercent;
 
   final String? creatorAddress;
+
+  @override
+  String toString() {
+    return 'OwnershipData('
+        'isLiquidityLocked: $isLiquidityLocked, '
+        'liquidityLockPlatform: $liquidityLockPlatform, '
+        'liquidityLockDaysRemaining: $liquidityLockDaysRemaining, '
+        'isOwnershipRenounced: $isOwnershipRenounced, '
+        'top10HoldersPercent: $top10HoldersPercent, '
+        'deployerHoldingPercent: $deployerHoldingPercent, '
+        'creatorAddress: $creatorAddress'
+        ')';
+  }
 }
 
 /// Layer 4 — Social/sentiment intelligence.
@@ -211,6 +323,20 @@ class SentimentData {
 
   /// Verified social links (Twitter, Telegram, website).
   final List<String> socialLinks;
+
+
+  @override
+  String toString() {
+    return 'SentimentData('
+        'mindshareScore: $mindshareScore, '
+        'sentimentLabel: $sentimentLabel, '
+        'sentimentScore: $sentimentScore, '
+        'kolMentionCount: $kolMentionCount, '
+        'isOrganicGrowth: $isOrganicGrowth, '
+        'narrativeMatch: $narrativeMatch, '
+        'socialLinks: $socialLinks' 
+        ')';}
+
 }
 
 /// Layer 5 — On-chain forensics.
@@ -241,6 +367,17 @@ class OnChainData {
 
   /// Average transaction size in USD (very small = bot activity).
   final double? avgTransactionSizeUsd;
+
+  @override
+  String toString() {
+    return 'OnChainData('
+        'walletClusterCount: $walletClusterCount, '
+        'suspiciousClusterCount: $suspiciousClusterCount, '
+        'deployerFundingSource: $deployerFundingSource, '
+        'isWashTrading: $isWashTrading, '
+        'uniqueBuyersCount: $uniqueBuyersCount, '
+        'avgTransactionSizeUsd: $avgTransactionSizeUsd'
+        ')';}
 }
 
 /// The complete intelligence report — output of the full pipeline.
@@ -260,6 +397,7 @@ class TokenIntelligenceReport {
     this.ownership,
     this.sentiment,
     this.onChain,
+    this.honeypot
   });
 
   final String chain;
@@ -286,6 +424,7 @@ class TokenIntelligenceReport {
   final OwnershipData? ownership;
   final SentimentData? sentiment;
   final OnChainData? onChain;
+  final HoneypotData? honeypot;  
 
   bool get hasCriticalFlags => flags.any((f) => f.isCritical);
 
@@ -304,5 +443,161 @@ class TokenIntelligenceReport {
             : '🔴';
     return '$scoreEmoji *$tokenSymbol* | Score: $aiScore/100\n'
         '_${aiReasoning.length > 120 ? '${aiReasoning.substring(0, 120)}...' : aiReasoning}_';
+  }
+
+  @override
+  String toString() {
+    return 'TokenIntelligenceReport('
+        'chain: $chain, '
+        'contractAddress: $contractAddress, '
+        'tokenName: $tokenName, '
+        'tokenSymbol: $tokenSymbol, '
+        'analysisTimestamp: $analysisTimestamp, '
+        'verdict: $verdict, '
+        'aiScore: $aiScore, '
+        'aiReasoning: $aiReasoning, '
+        'flags: ${flags.map((f) => f.toString()).join(', ')}, '
+        'market: ${market?.toString() ?? 'null'}, '
+        'safety: ${safety?.toString() ?? 'null'}, '
+        'ownership: ${ownership?.toString() ?? 'null'}, '
+        'sentiment: ${sentiment?.toString() ?? 'null'}, '
+        'onChain: ${onChain?.toString() ?? 'null'}, '
+        'honeypot: ${honeypot?.toString() ?? 'null'}'
+        ')';
+  }
+
+
+
+  // print entire report to terminal to view everything
+  void printReportToTerminal() {
+    void printSection(String title, Object? value, [int indent = 0]) {
+      final prefix = ' ' * indent;
+      if (value == null) {
+        print('$prefix$title: null');
+        return;
+      }
+      print('$prefix$title: $value');
+    }
+
+    void printObject(String title, Object? object) {
+      if (object == null) {
+        print('$title: null');
+        return;
+      }
+
+      if (object is MarketData) {
+        print('$title:');
+        printSection('priceUsd', object.priceUsd, 2);
+        printSection('liquidityUsd', object.liquidityUsd, 2);
+        printSection('volumeUsd24h', object.volumeUsd24h, 2);
+        printSection('marketCapUsd', object.marketCapUsd, 2);
+        printSection('holderCount', object.holderCount, 2);
+        printSection('tokenAgeHours', object.tokenAgeHours, 2);
+        printSection('priceChange1h', object.priceChange1h, 2);
+        printSection('priceChange6h', object.priceChange6h, 2);
+        printSection('priceChange24h', object.priceChange24h, 2);
+        printSection('buySellRatio', object.buySellRatio, 2);
+        printSection('pairAddress', object.pairAddress, 2);
+        printSection('dexId', object.dexId, 2);
+        printSection('buyCount24h', object.buyCount24h, 2);
+        printSection('sellCount24h', object.sellCount24h, 2);
+        return;
+      }
+
+      if (object is SafetyData) {
+        print('$title:');
+        printSection('isHoneypot', object.isHoneypot, 2);
+        printSection('isBlacklisted', object.isBlacklisted, 2);
+        printSection('hasMintFunction', object.hasMintFunction, 2);
+        printSection('hasProxyContract', object.hasProxyContract, 2);
+        printSection('buyTaxPercent', object.buyTaxPercent, 2);
+        printSection('sellTaxPercent', object.sellTaxPercent, 2);
+        printSection('isContractVerified', object.isContractVerified, 2);
+        printSection('isClonedContract', object.isClonedContract, 2);
+        printSection('tokenSnifferScore', object.tokenSnifferScore, 2);
+        printSection('rugCheckScore', object.rugCheckScore, 2);
+        printSection('goplusFlags', object.goplusFlags, 2);
+        return;
+      }
+
+      if (object is OwnershipData) {
+        print('$title:');
+        printSection('isLiquidityLocked', object.isLiquidityLocked, 2);
+        printSection('liquidityLockPlatform', object.liquidityLockPlatform, 2);
+        printSection('liquidityLockDaysRemaining', object.liquidityLockDaysRemaining, 2);
+        printSection('isOwnershipRenounced', object.isOwnershipRenounced, 2);
+        printSection('top10HoldersPercent', object.top10HoldersPercent, 2);
+        printSection('deployerHoldingPercent', object.deployerHoldingPercent, 2);
+        printSection('creatorAddress', object.creatorAddress, 2);
+        return;
+      }
+
+      if (object is SentimentData) {
+        print('$title:');
+        printSection('mindshareScore', object.mindshareScore, 2);
+        printSection('sentimentLabel', object.sentimentLabel, 2);
+        printSection('sentimentScore', object.sentimentScore, 2);
+        printSection('kolMentionCount', object.kolMentionCount, 2);
+        printSection('isOrganicGrowth', object.isOrganicGrowth, 2);
+        printSection('narrativeMatch', object.narrativeMatch, 2);
+        printSection('socialLinks', object.socialLinks, 2);
+        return;
+      }
+
+      if (object is OnChainData) {
+        print('$title:');
+        printSection('walletClusterCount', object.walletClusterCount, 2);
+        printSection('suspiciousClusterCount', object.suspiciousClusterCount, 2);
+        printSection('deployerFundingSource', object.deployerFundingSource, 2);
+        printSection('isWashTrading', object.isWashTrading, 2);
+        printSection('uniqueBuyersCount', object.uniqueBuyersCount, 2);
+        printSection('avgTransactionSizeUsd', object.avgTransactionSizeUsd, 2);
+        return;
+      }
+
+      if (object is HoneypotData) {
+        print('$title:');
+        printSection('isHoneypot', object.isHoneypot, 2);
+        printSection('riskLevel', object.riskLevel, 2);
+        printSection('riskLabel', object.riskLabel, 2);
+        printSection('simulationSuccess', object.simulationSuccess, 2);
+        printSection('buyTaxPercent', object.buyTaxPercent, 2);
+        printSection('sellTaxPercent', object.sellTaxPercent, 2);
+        printSection('transferTaxPercent', object.transferTaxPercent, 2);
+        printSection('isOpenSource', object.isOpenSource, 2);
+        printSection('isProxy', object.isProxy, 2);
+        printSection('totalHolders', object.totalHolders, 2);
+        printSection('tokenName', object.tokenName, 2);
+        printSection('tokenSymbol', object.tokenSymbol, 2);
+        return;
+      }
+
+      print('$title: ${object.toString()}');
+    }
+
+    print('=== Token Intelligence Report ===');
+    printSection('chain', chain);
+    printSection('contractAddress', contractAddress);
+    printSection('tokenName', tokenName);
+    printSection('tokenSymbol', tokenSymbol);
+    printSection('analysisTimestamp', analysisTimestamp);
+    printSection('verdict', verdict.name);
+    printSection('aiScore', aiScore);
+    printSection('aiReasoning', aiReasoning);
+    print('flags:');
+    if (flags.isEmpty) {
+      print('  none');
+    } else {
+      for (final flag in flags) {
+        print('  - [${flag.severity.name.toUpperCase()}] ${flag.source}: ${flag.message}');
+      }
+    }
+    printObject('market', market);
+    printObject('safety', safety);
+    printObject('ownership', ownership);
+    printObject('sentiment', sentiment);
+    printObject('onChain', onChain);
+    printObject('honeypot', honeypot);
+    print('=== End Token Intelligence Report ===');
   }
 }

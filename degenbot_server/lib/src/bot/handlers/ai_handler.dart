@@ -36,10 +36,15 @@ import 'package:degenbot_server/src/config/env.dart';
 import 'package:degenbot_server/src/services/repository/user_repository.dart';
 import 'package:degenbot_server/src/services/repository/trade_repository.dart';
 import 'package:degenbot_server/src/services/dex/dexscreener_service.dart';
+import 'package:degenbot_server/src/services/intelligence/token_intelligence_pipeline.dart';
 import 'package:degenbot_server/degen_logger.dart';
+import 'package:degenbot_server/src/bot/utils/chain_detector.dart';
 
+import '../../services/messaging/messaging_result.dart';
+import '../utils/message_formatter.dart';
 class AiHandler {
   final Bot _bot;
+  final TokenIntelligencePipeline _pipeline;
   final _users = const UserRepository();
   final _trades = const TradeRepository();
   final _dex =  DexScreenerService();
@@ -48,7 +53,7 @@ class AiHandler {
   // Map key: Telegram user ID
   final Map<int, Agent> _agents = {};
 
-  AiHandler(this._bot);
+  AiHandler(this._bot, this._pipeline);
 
   /// Register the catch-all text handler. Must be called LAST in bot setup.
   void register() {
@@ -59,15 +64,81 @@ class AiHandler {
 
   // ── MAIN HANDLER ──────────────────────────────────────────────────────────
 
+
+  /// If the message IS a bare contract address, run the pipeline directly
+  /// — skip the LLM entirely. This is what makes "paste a coin, get an
+  /// answer" deterministic instead of depending on the LLM choosing to
+  /// call the analyzeToken tool. Returns true if it handled the message.
+  Future<bool> _tryDirectAddressAnalysis(Context ctx, int telegramId, String text) async {
+    final trimmed = text.trim();
+    final detected = ChainDetector.detect(trimmed);
+    if (detected == null) return false;
+
+    Log.info('📍 [AI Handler] Bare address detected from $telegramId — bypassing LLM');
+    await ctx.api.sendChatAction(ChatID(telegramId), ChatAction.typing);
+    await ctx.reply('🔍 Got it — running the full analysis now, one sec...');
+
+    try {
+   final report = await _pipeline.analyzeAuto(contractAddress: trimmed);
+    final buttons = MessageFormatter.tokenAnalysisButtons(report);
+
+    // Telegram needs at least one button per row to render — sendButtons
+    // already handles chunking; just pass them straight through.
+    try {
+   report.printReportToTerminal();
+ 
+    await ctx.reply(
+      MessageFormatter.tokenAnalysisReport(report),
+      parseMode: ParseMode.markdown,
+      replyMarkup: _buildInlineKeyboard(buttons),
+    );
+  } catch (e) {
+    Log.warning('Markdown send failed, retrying as plain text: $e');
+    await ctx.reply(
+      MessageFormatter.tokenAnalysisReport(report).replaceAll(RegExp(r'[_*`\[\]]'), ''),
+      replyMarkup: _buildInlineKeyboard(buttons),
+    );
+  }
+    } catch (e, st) {
+      Log.error('Direct address analysis failed', error: e, stackTrace: st);
+      await ctx.reply('⚠️ Couldn\'t analyze that address right now. Try again in a moment.');
+    }
+    return true;
+  }
+
+// MODIFY _handleMessage — add the short-circuit check right after the
+// existing null/empty guard, BEFORE the LLM agent code runs:
+
+
+// ADD this helper to AiHandler:
+InlineKeyboard _buildInlineKeyboard(List<MessageButton> buttons) {
+  final keyboard = InlineKeyboard();
+  for (final btn in buttons) {
+    if (btn.url != null) {
+      keyboard.url(btn.text, btn.url!);
+    } else {
+      keyboard.text(btn.text, btn.callbackData ?? btn.id);
+    }
+    keyboard.row();
+  }
+  return keyboard;
+}
+
   Future<void> _handleMessage(Context ctx) async {
     final telegramUser = ctx.from;
     final text = ctx.text;
     if (telegramUser == null || text == null || text.trim().isEmpty) return;
 
     final telegramId = telegramUser.id;
+
+    // Deterministic fast-path: bare contract address → analyze immediately,
+    // skip the LLM agent entirely. This is Service A (Analyze) — chain-free,
+    // no command needed, works the instant a user pastes an address.
+    if (await _tryDirectAddressAnalysis(ctx, telegramId, text)) return;
+
     Log.info('📩 [AI Handler] Message from Telegram ID $telegramId: "$text"');
 
-    // Show typing indicator while AI thinks
+    // ── existing code below is UNCHANGED ──────────────────────────────
     await ctx.api.sendChatAction(
       ChatID(telegramId),
        ChatAction.typing,
@@ -77,7 +148,6 @@ class AiHandler {
       final agent = _getOrCreateAgent(telegramId);
       Log.debug('Sending query to LLM for user $telegramId...');
       
-      // send system prompt message first to ensure context is set
       final result = await agent.send(text, history: [
         ChatMessage.system(_buildSystemPrompt()),
       ]);
@@ -131,6 +201,7 @@ Always use the available tools to get real data before answering.
 Never make up prices, balances, or trade results.
 
 When a user asks about coins, use the scanTrending tool.
+When a user asks to scan, analyze, or check a specific token address (or asks if they should buy a token address), use the analyzeToken tool.
 When a user asks about their trades or positions, use getUserStatus.
 When a user wants to change risk settings, use updateRiskSetting.
 When you're unsure what the user wants, ask a short clarifying question.
@@ -327,6 +398,79 @@ Keep responses under 300 words unless the user asks for detail.
         await _trades.updateRiskProfile(updated);
         Log.success('   updateRiskSetting: Successfully updated risk setting $field to $value');
         return jsonEncode({'success': true, 'field': field, 'new_value': value});
+      },
+    ),
+
+    // ── analyzeToken ─────────────────────────────────────────────────────
+    Tool(
+      name: 'analyzeToken',
+      description:
+          'Run the full 5-layer intelligence pipeline on a token contract address. '
+          'Use when the user asks you to analyze, scan, check, or give a report '
+          'on a token address, or asks if they should buy a token address.',
+      inputSchema: Schema.fromMap({
+        'type': 'object',
+        'properties': {
+          'contractAddress': {
+            'type': 'string',
+            'description': 'The contract address/mint address of the token (e.g. 0x... or Solana address)',
+          },
+          'chain': {
+            'type': 'string',
+            'description': 'The blockchain: solana, ethereum, or bnb. Optional (defaults to user\'s active chain).',
+            'enum': ['solana', 'ethereum', 'bnb'],
+          },
+        },
+        'required': ['contractAddress'],
+      }),
+      onCall: (args) async {
+        Log.info('🛠️ [AI Tool] Executing analyzeToken for user $telegramId with args: $args');
+        final contractAddress = ((args as Map<String, dynamic>)['contractAddress'] as String).trim();
+        final user = await _users.findByTelegramId(telegramId);
+        final chain = (args['chain'] as String?) ?? user?.activeChain ?? 'solana';
+
+        try {
+          final report = await _pipeline.analyze(
+            contractAddress: contractAddress,
+            chain: chain,
+          );
+
+          // Return structured data to the LLM so it can summarize and explain it to the user.
+          final data = {
+            'name': report.tokenName,
+            'symbol': report.tokenSymbol,
+            'chain': report.chain,
+            'verdict': report.verdict.name,
+            'score': report.aiScore,
+            'reasoning': report.aiReasoning,
+            'market': report.market != null ? {
+              'price': report.market!.priceUsd,
+              'liquidity': report.market!.liquidityUsd,
+              'volume_24h': report.market!.volumeUsd24h,
+              'age_hours': report.market!.tokenAgeHours,
+              'buy_sell_ratio': report.market!.buySellRatio,
+            } : null,
+            'safety': report.safety != null ? {
+              'is_honeypot': report.safety!.isHoneypot,
+              'is_blacklisted': report.safety!.isBlacklisted,
+              'buy_tax': report.safety!.buyTaxPercent,
+              'sell_tax': report.safety!.sellTaxPercent,
+              'sniffer_score': report.safety!.tokenSnifferScore,
+              'rug_score': report.safety!.rugCheckScore,
+            } : null,
+            'flags': report.flags.map((f) => {
+              'severity': f.severity.name,
+              'source': f.source,
+              'message': f.message,
+            }).toList(),
+          };
+
+          Log.success('   analyzeToken: Done. Verdict: ${report.verdict.name} | Score: ${report.aiScore}');
+          return jsonEncode(data);
+        } catch (e) {
+          Log.error('   analyzeToken: Failed', error: e);
+          return 'Failed to analyze token: $e';
+        }
       },
     ),
   ];

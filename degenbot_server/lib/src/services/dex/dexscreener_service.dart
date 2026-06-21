@@ -46,6 +46,54 @@ class DexScreenerService {
 
   // ── PUBLIC METHODS ────────────────────────────────────────────────────────
 
+  // ADD to dexscreener_service.dart, inside DexScreenerService class:
+
+  /// Resolves which chain a bare contract address actually lives on, by
+  /// asking DexScreener directly instead of guessing. Returns the
+  /// DexScreener chainId string (e.g. 'ethereum', 'bsc', 'base', 'solana',
+  /// 'pulsechain') or null if DexScreener has no data for this address
+  /// at all (token too new, or genuinely doesn't exist).
+  ///
+  /// This is the chain router for Service A (Analyze) — replaces guessing
+  /// eth-then-bnb. DexScreener indexes far more chains than we have deep
+  /// support for, so this also tells us when we're in "lite mode" territory.
+  Future<String?> resolveChain(String contractAddress) async {
+    _log.fine('Resolving chain for $contractAddress via DexScreener search');
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/latest/dex/search',
+        queryParameters: {'q': contractAddress},
+      );
+      final pairs = (response.data?['pairs'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
+
+      if (pairs.isEmpty) return null;
+
+      // A token can have many pairs across many DEXes but should only
+      // live on ONE chain — take the chainId of whichever pair has the
+      // most liquidity, since that's the canonical listing.
+      pairs.sort((a, b) {
+        final liqA = (a['liquidity'] as Map?)?['usd'] as num? ?? 0;
+        final liqB = (b['liquidity'] as Map?)?['usd'] as num? ?? 0;
+        return liqB.compareTo(liqA);
+      });
+
+      return pairs.first['chainId'] as String?;
+    } catch (e) {
+      _log.warning('Chain resolution failed for $contractAddress: $e');
+      return null;
+    }
+  }
+
+  /// Normalizes DexScreener's chainId strings to our internal chain names.
+  /// DexScreener uses 'bsc' where we use 'bnb' internally (see _chainToId
+  /// going the other direction). Chains we don't have deep support for
+  /// pass through unchanged — the pipeline will route them to lite mode.
+  static String normalizeChainId(String dexScreenerChainId) => switch (dexScreenerChainId) {
+        'bsc' => 'bnb',
+        _ => dexScreenerChainId, // 'solana', 'ethereum', 'base', 'pulsechain', etc. pass through
+      };
+
   /// Fetch data for a specific token by contract address.
   /// Returns a list of pairs (a token can trade on multiple DEXes).
   Future<List<Map<String, dynamic>>> getTokenData({

@@ -55,13 +55,24 @@ import 'package:degenbot_server/src/bot/middleware/user_middleware.dart';
 import 'package:degenbot_server/src/services/messaging/telegram/telegram_service.dart';
 import 'package:degenbot_server/src/services/messaging/telegram/telegram_service_adapter.dart';
 import 'package:degenbot_server/src/services/messaging/telegram/telegram_webhook_handler.dart';
+import 'package:degenbot_server/src/services/intelligence/token_intelligence_pipeline.dart';
+import 'package:degenbot_server/src/services/dex/dexscreener_service.dart';
+import 'package:degenbot_server/src/services/intelligence/goplus_service.dart';
+import 'package:degenbot_server/src/services/intelligence/rugcheck_service.dart';
+import 'package:degenbot_server/src/services/intelligence/tokensniffer_service.dart';
+import 'package:degenbot_server/src/services/intelligence/chaingpt_service.dart';
+import 'package:degenbot_server/src/services/intelligence/onchain_forensics_service.dart';
+import 'package:televerse/telegram.dart';
 import 'package:televerse/televerse.dart';
+
+import '../services/intelligence/honeypot_service.dart';
 
 final _log = Logger('TelegramBot');
 
 class DegenTelegramBot {
   late final TelegramService _telegramService;
   late final TelegramServiceAdapter _adapter;
+  late final TokenIntelligencePipeline _pipeline;
   late final CommandHandlers _commands;
   late final AiHandler _ai;
 
@@ -72,18 +83,39 @@ class DegenTelegramBot {
         webhookBaseUrl.isEmpty ? null : '$webhookBaseUrl/webhooks/telegram';
 
     _telegramService = TelegramService(
-      botToken: Env.telegramToken,
+      botToken: '8829391204:AAGSN3_6c_1aq3QCz2Mw6jpV4mdSdOmL1o0', //Env.telegramToken,
       webhookUrl: webhookUrl,
     );
     _adapter = TelegramServiceAdapter(_telegramService);
 
-    _commands = CommandHandlers(_telegramService.bot);
-    _ai = AiHandler(_telegramService.bot);
+    final chainGptService = Env.chainGptApiKey.isNotEmpty 
+        ? ChainGPTService(apiKey: Env.chainGptApiKey) 
+        : null;
+
+    _pipeline = TokenIntelligencePipeline(
+      dexScreenerService: DexScreenerService(),
+      goPlusService: GoPlusService(),
+      rugCheckService: RugCheckService(apiKey: Env.rugCheckApiKey.isEmpty ? null : Env.rugCheckApiKey),
+      tokenSnifferService: TokenSnifferService(apiKey: Env.tokenSnifferApiKey.isEmpty ? null : Env.tokenSnifferApiKey),
+      chainGptService: chainGptService,
+      honeypotService: HoneypotService(useCache: true),
+      onChainForensicsService: OnChainForensicsService(
+        etherscanApiKey: Env.etherscanApiKey.isEmpty ? null : Env.etherscanApiKey,
+        bscscanApiKey: Env.bscscanApiKey.isEmpty ? null : Env.bscscanApiKey,
+
+      ),
+    );
+
+    _commands = CommandHandlers(_telegramService.bot, _pipeline);
+    _ai = AiHandler(_telegramService.bot, _pipeline);
 
     _telegramService.bot.use(const UserMiddleware().handle);
 
     // ── Command handlers ────────────────────────────────────────────────
-    _commands.register();
+    _commands.register(
+      // Pass the setTelegramCommands function so CommandHandlers can update the command list in Telegram's UI when needed.
+      setCommandsCallback: setTelegramCommands,
+    );
     _commands.registerFeatureToggleCallback();
 
     // ── AI catch-all ─────────────────────────────────────────────────────
@@ -121,5 +153,16 @@ class DegenTelegramBot {
   /// features (inline keyboards, conversation plugin) the generic
   /// IMessagingService interface doesn't expose.
   Bot<Context> get bot => _telegramService.bot;
-}
+
+
+  // Helper function to set bot commands in Telegram's UI (the menu that appears when users type "/").
+  // This is called from CommandHandlers.register() to keep it all in one place.
+  Future<void> setTelegramCommands(List<BotCommand> commands, int chatId) async {
+    try {
+      await _telegramService.setMyCommands(commands:commands, scope: BotCommandScope.chat(chatId: 
+      ChatID(chatId)));
+      _log.info('Telegram commands set successfully');
+    } catch (e, st) {
+      _log.severe('Failed to set Telegram commands', e, st);    
+}}}
 

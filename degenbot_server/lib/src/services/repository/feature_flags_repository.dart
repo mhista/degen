@@ -36,6 +36,7 @@ class FeatureFlag {
   static const chainGpt = 'chaingpt';
   static const onChainForensics = 'onchain_forensics';
   static const aiScoring = 'ai_scoring';
+  static const honeypotIs = 'honeypot_is';
 
   static const all = [
     dexScreener,
@@ -45,6 +46,7 @@ class FeatureFlag {
     chainGpt,
     onChainForensics,
     aiScoring,
+    honeypotIs,
   ];
 
   /// Human-readable label + free/paid note, shown in /features command.
@@ -56,6 +58,7 @@ class FeatureFlag {
     chainGpt: 'ChainGPT (sentiment) — credit-based',
     onChainForensics: 'On-chain forensics (Etherscan/BscScan) — free',
     aiScoring: 'AI scoring engine — required for verdicts',
+    honeypotIs: 'Honeypot.is (sell simulation) — free'
   };
 }
 
@@ -76,7 +79,8 @@ class FeatureFlagsRepository {
       FeatureFlag.chainGpt: IntelligenceFeatureFlags.chainGpt,
       FeatureFlag.onChainForensics: IntelligenceFeatureFlags.onChainForensics,
       FeatureFlag.aiScoring: IntelligenceFeatureFlags.aiScoring,
-    };
+      
+    };  
 
     for (final entry in defaults.entries) {
       final existing = await supabase
@@ -167,6 +171,7 @@ class FeatureFlagsRepository {
         FeatureFlag.onChainForensics =>
           IntelligenceFeatureFlags.onChainForensics,
         FeatureFlag.aiScoring => IntelligenceFeatureFlags.aiScoring,
+        FeatureFlag.honeypotIs => true,
         _ => true,
       };
 }

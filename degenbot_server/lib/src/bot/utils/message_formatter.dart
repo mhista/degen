@@ -10,10 +10,237 @@
 
 import 'package:degenbot_server/src/generated/protocol.dart';
 import 'package:degenbot_server/src/services/repository/feature_flags_repository.dart';
+import 'package:degenbot_server/src/services/intelligence/token_intelligence_report.dart';
+
+import '../../services/messaging/messaging_result.dart';
 
 class MessageFormatter {
   MessageFormatter._(); // static-only class
 
+  // ADD to message_formatter.dart:
+
+  /// Builds the button row for a token report — adapts to what's actually
+  /// known. A confirmed honeypot never gets a Buy button. Chart/Holders
+  /// only appear if we have a real pair/contract address to link to.
+  static List<MessageButton> tokenAnalysisButtons(TokenIntelligenceReport report) {
+    final buttons = <MessageButton>[];
+    final isHoneypot = report.honeypot?.isHoneypot ?? report.safety?.isHoneypot ?? false;
+    final pairAddr = report.market?.pairAddress;
+
+    if (pairAddr != null && pairAddr.isNotEmpty) {
+      final dexScreenerChain = report.chain == 'bnb' ? 'bsc' : report.chain;
+      buttons.add(MessageButton(
+        id: 'chart',
+        text: '📊 Chart',
+        url: 'https://dexscreener.com/$dexScreenerChain/$pairAddr',
+      ));
+    }
+
+    buttons.add(MessageButton(
+      id: 'holders',
+      text: '👥 Holders',
+      callbackData: 'token_holders:${report.contractAddress}:${report.chain}',
+    ));
+
+    if (!isHoneypot && report.verdict != TokenVerdict.reject) {
+      buttons.add(MessageButton(
+        id: 'buy',
+        text: '🛒 Buy',
+        callbackData: 'token_buy:${report.contractAddress}:${report.chain}',
+      ));
+    }
+
+    buttons.add(MessageButton(
+      id: 'refresh',
+      text: '🔄 Refresh',
+      callbackData: 'token_refresh:${report.contractAddress}:${report.chain}',
+    ));
+
+    return buttons;
+  }
+
+  // ── TOKEN ANALYSIS REPORT — dense, scannable, crypto-native formatting ──
+ // ── TOKEN ANALYSIS REPORT — dense, scannable, crypto-native formatting ──
+  static String tokenAnalysisReport(TokenIntelligenceReport report) {
+    final verdictTag = switch (report.verdict) {
+      TokenVerdict.buy => '🟢 BUY',
+      TokenVerdict.watch => '🟡 WATCH',
+      TokenVerdict.reject => '🔴 REJECT',
+      TokenVerdict.error => '❌ ERROR',
+    };
+
+    final name = _esc(report.tokenName);
+    final symbol = _esc(report.tokenSymbol);
+    final chainLabel = report.chain.toUpperCase();
+
+    final buffer = StringBuffer();
+
+    final isHoneypot = report.honeypot?.isHoneypot ?? report.safety?.isHoneypot ?? false;
+    final honeypotTag = isHoneypot ? '🍯 HONEYPOT' : '✅ No HoneyPot';
+    buffer.writeln('📌 *$name ($symbol)* | $honeypotTag');
+
+    final hasSuspicious = (report.safety?.hasMintFunction ?? false) ||
+        (report.safety?.hasProxyContract ?? false) ||
+        (report.honeypot?.isProxy ?? false);
+    buffer.writeln(hasSuspicious
+        ? '⚠️ *Suspicious functions found:* ${_suspiciousFunctionsList(report)}'
+        : '✅ No suspicious functions detected');
+    buffer.writeln();
+
+    if (report.ownership?.creatorAddress != null) {
+      buffer.writeln('👨‍💻 Deployer: `${_shortAddr(report.ownership!.creatorAddress!)}`');
+    }
+    buffer.writeln('🔸 Chain: $chainLabel | ⚖️ Age: ${_ageLabel(report.market?.tokenAgeHours ?? 0)}');
+    buffer.writeln();
+
+    if (report.market != null) {
+      final m = report.market!;
+      final liqPct = (m.liquidityUsd > 0 && m.marketCapUsd != null && m.marketCapUsd! > 0)
+          ? ' (${((m.liquidityUsd / m.marketCapUsd!) * 100).toStringAsFixed(0)}%)'
+          : '';
+      buffer.writeln('💰 MC: ${_fmtUsd(m.marketCapUsd)} | Liq: ${_fmtUsd(m.liquidityUsd)}$liqPct');
+
+      if (report.ownership != null) {
+        final locked = report.ownership!.isLiquidityLocked;
+        final platform = report.ownership!.liquidityLockPlatform;
+        buffer.writeln(locked
+            ? '🔒 LP Lock: Locked${platform != null ? ' ($platform)' : ''}'
+            : '🔓 LP Lock: ⚠️ NOT locked');
+      }
+
+      final buyTax = report.honeypot?.buyTaxPercent ?? report.safety?.buyTaxPercent ?? 0;
+      final sellTax = report.honeypot?.sellTaxPercent ?? report.safety?.sellTaxPercent ?? 0;
+      final transferTax = report.honeypot?.transferTaxPercent ?? 0;
+      buffer.writeln('💳 Tax: B: ${buyTax.toStringAsFixed(0)}% | S: ${sellTax.toStringAsFixed(0)}% | T: ${transferTax.toStringAsFixed(0)}%');
+
+      buffer.writeln('📉 24h: ${_signed(m.priceChange24h)}% | V: ${_fmtUsd(m.volumeUsd24h)} | B:${_fmtCompact(m.buyCount24h)} S:${_fmtCompact(m.sellCount24h)}');
+      buffer.writeln();
+
+      buffer.writeln('💲 Price: \$${m.priceUsd.toStringAsFixed(m.priceUsd < 0.01 ? 8 : 4)}');
+      buffer.writeln();
+    }
+
+    final holders = report.market?.holderCount ?? report.honeypot?.totalHolders;
+    if (holders != null || report.ownership != null) {
+      if (holders != null) {
+        buffer.writeln('👩‍👧‍👦 Holders: ${_fmtCompact(holders)}'
+            '${report.ownership != null ? ' | Top10: ${report.ownership!.top10HoldersPercent.toStringAsFixed(1)}%' : ''}');
+      }
+      if (report.ownership != null) {
+        final o = report.ownership!;
+        buffer.writeln(o.isOwnershipRenounced ? '👤 Owner: RENOUNCED ✅' : '👤 Owner: Deployer ⚠️');
+        if (o.deployerHoldingPercent > 0) {
+          buffer.writeln('💼 Deployer holds: ${o.deployerHoldingPercent.toStringAsFixed(2)}% of supply');
+        }
+      }
+      buffer.writeln();
+    }
+
+    final insiderFlags = report.flags.where((f) =>
+        f.source == 'RugCheck' && f.message.toLowerCase().contains('insider')).toList();
+    if (insiderFlags.isNotEmpty || (report.onChain?.isWashTrading ?? false)) {
+      buffer.writeln('🕸️ *Wallet Clustering*');
+      for (final f in insiderFlags) {
+        buffer.writeln('   ${_severityIcon(f.severity)} ${_esc(f.message)}');
+      }
+      if (report.onChain?.isWashTrading ?? false) {
+        buffer.writeln('   🔴 Wash trading pattern detected on-chain');
+      }
+      buffer.writeln();
+    }
+
+    if (report.sentiment != null) {
+      final s = report.sentiment!;
+      buffer.writeln('📣 Sentiment: ${s.sentimentLabel} | KOL mentions (24h): ${s.kolMentionCount}'
+          '${s.isOrganicGrowth ? '' : ' ⚠️ possibly inorganic'}');
+      buffer.writeln();
+    }
+
+    buffer.writeln('🏆 *Verdict:* $verdictTag | *Score:* ${report.aiScore}/100');
+    buffer.writeln('🤖 _${_esc(report.aiReasoning)}_');
+
+    final remainingFlags = report.flags.where((f) =>
+        !(f.source == 'RugCheck' && f.message.toLowerCase().contains('insider'))).toList();
+    if (remainingFlags.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln('🚩 *Flags (${remainingFlags.length})*');
+      for (final f in remainingFlags.take(8)) {
+        buffer.writeln('${_severityIcon(f.severity)} [${_esc(f.source)}] ${_esc(f.message)}');
+      }
+      if (remainingFlags.length > 8) {
+        buffer.writeln('   _...and ${remainingFlags.length - 8} more_');
+      }
+    }
+
+    buffer.writeln();
+    buffer.write('📌 `${report.contractAddress}`');
+
+    return buffer.toString();
+  }
+  // ── HELPERS specific to the report formatter ────────────────────────────
+
+   // ── SAFETY: escape Telegram MarkdownV1 special chars in untrusted
+  // strings (token names/symbols come straight from a smart contract —
+  // a single unescaped * or _ breaks the ENTIRE message, not just that line). ──
+  static String _esc(String? s) {
+    if (s == null || s.isEmpty) return '?';
+    return s.replaceAllMapped(
+      RegExp(r'[_*`\[]'),
+      (m) => '\\${m[0]}',
+    );
+  }
+
+  static String _fmtUsd(double? v, {int decimals = 2}) {
+    if (v == null) return 'N/A';
+    if (v >= 1e9) return '\$${(v / 1e9).toStringAsFixed(2)}B';
+    if (v >= 1e6) return '\$${(v / 1e6).toStringAsFixed(2)}M';
+    if (v >= 1e3) return '\$${(v / 1e3).toStringAsFixed(1)}K';
+    return '\$${v.toStringAsFixed(decimals)}';
+  }
+
+  static String _fmtCompact(num? v) {
+    if (v == null) return 'N/A';
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)}B';
+    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)}M';
+    if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(1)}K';
+    return v.toStringAsFixed(0);
+  }
+
+  static String _shortAddr(String addr) {
+    if (addr.length <= 10) return addr;
+    return '${addr.substring(0, 4)}...${addr.substring(addr.length - 4)}';
+  }
+
+  static String _ageLabel(double hours) {
+    if (hours < 1) return '${(hours * 60).toStringAsFixed(0)}m';
+    if (hours < 24) return '${hours.toStringAsFixed(0)}h';
+    return '${(hours / 24).toStringAsFixed(0)}d';
+  }
+
+  static String _severityIcon(FlagSeverity s) => switch (s) {
+        FlagSeverity.critical => '🔴',
+        FlagSeverity.high => '🟠',
+        FlagSeverity.medium => '🟡',
+        FlagSeverity.low => '🔵',
+      };
+
+  static String _signed(double? v) {
+    if (v == null) return '?';
+    return '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)}';
+  }
+
+  static String _suspiciousFunctionsList(TokenIntelligenceReport r) {
+    final items = <String>[];
+    if (r.safety?.hasMintFunction ?? false) items.add('MINTABLE');
+    if (r.safety?.hasProxyContract ?? false) items.add('PROXY');
+    if (r.honeypot?.isProxy ?? false) items.add('PROXY_CALLS');
+    return items.join(', ');
+  }
+
+  // buySellRatio is buys/sells as a single double — these reconstruct
+  // approximate counts for display only (not exact, ratio-derived).
+  static int? _buysFromRatio(MarketData m) => null; // placeholder — see note below
+  static int? _sellsFromRatio(MarketData m) => null; // placeholder — see note below
   // ── STATUS ─────────────────────────────────────────────────────────────────
   static String statusMessage({
     required User user,

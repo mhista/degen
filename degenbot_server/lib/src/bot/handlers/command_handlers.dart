@@ -32,29 +32,40 @@ import 'package:televerse/televerse.dart';
 import 'package:degenbot_server/src/services/repository/user_repository.dart';
 import 'package:degenbot_server/src/services/repository/trade_repository.dart';
 import 'package:degenbot_server/src/services/repository/feature_flags_repository.dart';
+import 'package:degenbot_server/src/services/intelligence/token_intelligence_pipeline.dart';
 import 'package:degenbot_server/src/bot/utils/message_formatter.dart';
 
 final _log = Logger('CommandHandlers');
 
 class CommandHandlers {
   final Bot _bot;
+  final TokenIntelligencePipeline _pipeline;
   final _users = const UserRepository();
   final _trades = const TradeRepository();
   final _flags = const FeatureFlagsRepository();
 
-  CommandHandlers(this._bot);
+  CommandHandlers(this._bot, this._pipeline);
 
   /// Register all commands. Called once from DegenTelegramBot.start().
-  void register() {
+  void register(
+  // This callback is passed to CommandHandlers so it can update the command list in Telegram's UI whenever needed (e.g. if we want to add/remove commands based on feature flags or user state).
+  {
+    required Future<void> Function(List<BotCommand>, int chatId)
+    setCommandsCallback,
+  }) {
     _bot.plugin(ConversationPlugin<Context>());
-    
+
     _bot.use(createConversation('create_wallet_conversation', _onWallet));
-    
-    _bot.command('start', _onStart);
+
+    _bot.command(
+      'start',
+      (ctx) => _onStart(ctx, setCommandsCallback: setCommandsCallback),
+    );
+    _bot.command('analyze', _onAnalyze);
     _bot.command('status', _onStatus);
     _bot.command('wallet', (ctx) async {
-    await ctx.conversation.enter("create_wallet_conversation");
-  });
+      await ctx.conversation.enter("create_wallet_conversation");
+    });
     _bot.command('chain', _onChain);
     _bot.command('activate', _onActivate);
     _bot.command('deactivate', _onDeactivate);
@@ -68,14 +79,59 @@ class CommandHandlers {
     _log.info('Registered ${12} command handlers');
   }
 
-
-
   // ── /start ────────────────────────────────────────────────────────────────
-  Future<void> _onStart(Context ctx) async {
+  Future<void> _onStart(
+    Context ctx, {
+    required Future<void> Function(List<BotCommand>, int chatId)
+    setCommandsCallback,
+  }) async {
     final user = ctx.update.message?.from;
     if (user == null) return;
 
     final name = user.firstName;
+    // call the callback funtion first
+    await setCommandsCallback([
+      BotCommand(
+        command: 'start',
+        description: 'Welcome message and setup instructions',
+      ),
+      BotCommand(
+        command: 'status',
+        description: 'Show bot status, wallet, open trades',
+      ),
+      BotCommand(
+        command: 'wallet',
+        description: 'Set or change your wallet address',
+      ),
+      BotCommand(
+        command: 'chain',
+        description: 'Switch blockchain (solana/ethereum/bnb)',
+      ),
+      BotCommand(command: 'activate', description: 'Turn the trading bot ON'),
+      BotCommand(
+        command: 'deactivate',
+        description: 'Turn the trading bot OFF',
+      ),
+      BotCommand(command: 'positions', description: 'List your open trades'),
+      BotCommand(
+        command: 'history',
+        description: 'Show your last 10 closed trades',
+      ),
+      BotCommand(
+        command: 'stats',
+        description: 'View your ROI and performance stats',
+      ),
+      BotCommand(
+        command: 'risk',
+        description: 'View or change your risk settings',
+      ),
+      BotCommand(
+        command: 'features',
+        description: 'Toggle intelligence data sources on/off',
+      ),
+      BotCommand(command: 'help', description: 'Show this command reference'),
+    ], user?.id ?? 0);
+
     await ctx.reply(
       '👋 Welcome to DegenBot, *$name*!\n\n'
       'I\'m an AI-powered crypto trading bot that scans DexScreener, '
@@ -92,7 +148,53 @@ class CommandHandlers {
     );
   }
 
+  // ── /analyze ──────────────────────────────────────────────────────────────
+  Future<void> _onAnalyze(Context ctx) async {
+    final telegramId = ctx.update.message?.from?.id;
+    if (telegramId == null) return;
 
+    final user = await _users.findByTelegramId(telegramId);
+    if (user == null) return;
+
+    final text = ctx.update.message?.text?.trim() ?? '';
+    final args = text.split(' ').where((s) => s.isNotEmpty).toList();
+    if (args.length < 2) {
+      await ctx.reply(
+        '❌ *Please specify a contract address.*\n\n'
+        'Usage:\n'
+        '`/analyze <contract_address> [chain]`\n'
+        'Example: `/analyze 0x1234...`',
+        parseMode: ParseMode.markdown,
+      );
+      return;
+    }
+
+    final contractAddress = args[1].trim();
+    // Support custom chain as optional 3rd argument, otherwise use user's activeChain
+    final chain = args.length >= 3
+        ? args[2].trim().toLowerCase()
+        : user.activeChain;
+
+    await ctx.reply(
+      '🔍 *Running 5-layer token analysis...*\nThis takes a few seconds.',
+      parseMode: ParseMode.markdown,
+    );
+
+    try {
+      final report = await _pipeline.analyze(
+        contractAddress: contractAddress,
+        chain: chain,
+      );
+
+      await ctx.reply(
+        MessageFormatter.tokenAnalysisReport(report),
+        parseMode: ParseMode.markdown,
+      );
+    } catch (e, st) {
+      _log.severe('Error in /analyze command', e, st);
+      await ctx.reply('❌ An error occurred during analysis: $e');
+    }
+  }
 
   // ── /status ───────────────────────────────────────────────────────────────
   Future<void> _onStatus(Context ctx) async {
@@ -116,9 +218,13 @@ class CommandHandlers {
       parseMode: ParseMode.markdown,
     );
   }
+
   // ── /wallet ───────────────────────────────────────────────────────────────
   // Multi-step: ask for address, validate format, save.
-  Future<void> _onWallet(Conversation<Context> conversation,Context ctx) async {
+  Future<void> _onWallet(
+    Conversation<Context> conversation,
+    Context ctx,
+  ) async {
     final telegramId = ctx.update.message?.from?.id;
     if (telegramId == null) return;
 
@@ -140,9 +246,12 @@ class CommandHandlers {
       );
     }
 
-
     // Use Televerse conversation to wait for the next non-empty text message
-    final response = await conversation.waitUntil((event) => (event.message?.text ?? '').isNotEmpty, timeout: const Duration(minutes: 1), otherwise: (ctx) async => await ctx.reply('Timeout — wallet unchanged.'),);
+    final response = await conversation.waitUntil(
+      (event) => (event.message?.text ?? '').isNotEmpty,
+      timeout: const Duration(minutes: 1),
+      otherwise: (ctx) async => await ctx.reply('Timeout — wallet unchanged.'),
+    );
     // final response = await conv.waitForTextMessage(ctx);
     final address = response.text?.trim() ?? '';
 
@@ -171,8 +280,6 @@ class CommandHandlers {
     );
   }
 
-
-
   // ── /chain ────────────────────────────────────────────────────────────────
   Future<void> _onChain(Context ctx) async {
     final telegramId = ctx.update.message?.from?.id;
@@ -180,9 +287,9 @@ class CommandHandlers {
 
     // Show inline keyboard for chain selection
     final keyboard = InlineKeyboard()
-      .text('☀️ Solana', 'chain:solana')
-      .text('🔷 Ethereum', 'chain:ethereum')
-      .text('🟡 BNB', 'chain:bnb');
+        .text('☀️ Solana', 'chain:solana')
+        .text('🔷 Ethereum', 'chain:ethereum')
+        .text('🟡 BNB', 'chain:bnb');
 
     await ctx.reply(
       '🔗 Select your blockchain:',
@@ -198,12 +305,14 @@ class CommandHandlers {
       final user = await _users.findByTelegramId(userId);
       if (user == null) return;
 
-      await _users.update(user.copyWith(
-        activeChain: chain,
-        walletAddress: null,
-        isBotActive: false,
-        updatedAt: DateTime.now().toUtc(),
-      ));
+      await _users.update(
+        user.copyWith(
+          activeChain: chain,
+          walletAddress: null,
+          isBotActive: false,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
 
       await ctx.answerCallbackQuery(text: 'Switched to $chain ✅');
       await ctx.editMessageText(
