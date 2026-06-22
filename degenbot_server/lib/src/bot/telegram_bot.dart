@@ -83,7 +83,7 @@ class DegenTelegramBot {
         webhookBaseUrl.isEmpty ? null : '$webhookBaseUrl/webhooks/telegram';
 
     _telegramService = TelegramService(
-      botToken: '8829391204:AAGSN3_6c_1aq3QCz2Mw6jpV4mdSdOmL1o0', //Env.telegramToken,
+      botToken: Env.telegramToken,
       webhookUrl: webhookUrl,
     );
     _adapter = TelegramServiceAdapter(_telegramService);
@@ -102,7 +102,7 @@ class DegenTelegramBot {
       onChainForensicsService: OnChainForensicsService(
         etherscanApiKey: Env.etherscanApiKey.isEmpty ? null : Env.etherscanApiKey,
         bscscanApiKey: Env.bscscanApiKey.isEmpty ? null : Env.bscscanApiKey,
-
+  
       ),
     );
 
