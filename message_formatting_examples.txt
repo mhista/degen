@@ -1,0 +1,116 @@
+
+
+
+📌 ARK (ARK) (https://bscscan.com/token/0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d) | No HoneyPot (https://honeypot.is/?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d)
+⚠️️ No Suspicious functions were found
+Doesn't mean it's clean!
+
+👨‍💻 Deployer: 0x58...3386 (https://bscscan.com/address/0x58e798c4d66ca5206aec07841f97d381dcaf3386)
+👤 Owner: Deployer
+🔸 Chain: BSC | ⚖️ Age: 297d
+⚡ Blz (https://t.me/blazing_trading_bot?start=ref_ttfbot_0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d) | Ban (https://t.me/BananaGunSniper_bot?start=snp_TTF_0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d) | Bit (https://t.me/BitFootBot?start=buy=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d_BSC_ttfbot) | XCept (https://t.me/XCeption_bot?start=ttf-0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d)
+
+💰 MC: $176.75M | Liq: $58.47M (33%)
+🔒 LP Lock: 74%, Burned
+💳 Tax: B: 0% | S: 2% | T: 0%
+⛽ Gas: 154456 | 115935
+🚫 MaxTx: N/A | MaxW: N/A
+📉 24h: -8% | V: $5M | B:26350 S:25927
+📊 Photon (https://photon-bnb.tinyastro.io/en/r/@ttfbot/0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8) | Pad (https://trade.padre.gg/trade/bsc/0xcaaf3c41a40103a23eeaa4bba468af3cf5b0e0d8?rk=ttf) | Blz (https://web.blazingapp.com/dashboard/pro/bsc?token=0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8&affiliateId=ttfbot) | GT (https://www.geckoterminal.com/bsc/pools/0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8?utm_source=telegram&utm_medium=ttfbot) | DT (https://www.dextools.io/app/en/bsc/pair-explorer/0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8) | DS (https://www.dexscreener.com/bsc/0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8)
+
+💲 Price: $7.00005800
+💵 Launch MC: $498.74M (-2x 😂)
+👆 ATH: $509.71M (1x)
+👨‍👨‍👧‍👦 Scans (https://t.me/ttfbotbot?start=sb): 1906 | Votes (https://t.me/ttfbotbot?start=v-36153a1f9aef578ea23b894b41fdb209): 0 👍, 0 👎 | Calls (https://t.me/spydefi_bot?start=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d)
+🪪 KYC: N/A | Audit: N/A 
+🔗 Website (https://docs.metamask.io/guide/signing-data.html[`eth_signTypedDataV4`)
+
+📊 TS: 25.25M | Burned: 0.0%
+👩‍👧‍👦 Holders: 791.8K | Top10: 98.7%
+💸 Airdrops: -
+🧳 Bundle (https://t.me/ttfbotbot?start=bundle0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d): 0.0% (0.0Ξ), 0💩, 0💸, 0📦
+💵 Wallets
+ Treasury (https://bscscan.com/address/0xd9d1c7dcf7cb6181a61ed0e70f64fe7ddd4b9495): 0.03 BNB | 0.42% ARK
+ Deployer (https://bscscan.com/address/0x58e798c4d66ca5206aec07841f97d381dcaf3386): 0.02 BNB | 0.0% ARK
+ Oracle (https://bscscan.com/address/0x615a2a799c49af74e91b4c3ca5ead68897c07a81): 0.0 BNB | 0.0% ARK
+ Rbs (https://bscscan.com/address/0x23876d9f06f8290f119fb39b7fdcf93a08e2d616): 0.0 BNB | 0.0% ARK
+
+DYOR/NFA: What do these mean? (https://t.me/ttfbotbot?start=legend)
+
+
+
+📌 Fattoo Coin (FATTOO) (https://solscan.io/token/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump)
+⚠ Mutable Metadata
+
+📌 Pair: 2hvm...VXtY (https://solscan.io/token/2hvm9YZV1kszzapqBdLKjx55iRxZQvoEUZ59hKTHVXtY)
+👨‍💻 Deployer: 2bJL...pump (https://solscan.io/address/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump)
+👤 Owner: RENOUNCED
+🔸 Chain: SOL | ⚖️ Age: 24m
+🌿 Mint: No ✅ | Liq: 🔥 (100%)
+⚡ Thor (https://t.me/ThorSolana_bot?start=r-BmN9f7A-buy-2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) | Cyp (https://t.me/solcypher_bot?start=UYu2h6CO_0sfwwWPSDa_2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) | Tro (https://t.me/solana_trojanbot?start=r-ttf-2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) | Blz (https://t.me/blazing_trading_bot?start=ref_ttfbot_2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) | Ban (https://t.me/BananaGun_bot?start=snp_ttf_2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) | Bit (https://t.me/BitFootBot?start=buy=2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump_Solana_ttfbot)
+
+💰 MC: $57.6K | Liq: $17.2K (29%) | iLiq: 100%
+📈 24h: 96.54% | V: $235.2K | B:3K S:3K
+📊 SHOTGUN (https://app.shotgun.fun/trade?token=2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump&ref=ttf) | TRT (https://trojan.com/terminal?token=2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump&ref=ttf) | AX (http://axiom.trade/t/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump/@ttfbot) | PAD (https://trade.padre.gg/trade/solana/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump?rk=ttf) | GT (https://www.geckoterminal.com/solana/pools/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump?utm_source=telegram&utm_medium=ttfbot) | BE (https://birdeye.so/token/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump?chain=solana) | DT (https://www.dextools.io/app/en/solana/pair-explorer/2hvm9YZV1kszzapqBdLKjx55iRxZQvoEUZ59hKTHVXtY) | DS (https://dexscreener.com/solana/2hvm9YZV1kszzapqBdLKjx55iRxZQvoEUZ59hKTHVXtY)
+
+💲 Price: $0.0000576
+💵 Launch MC: $2.0K (29x)
+👆 ATH: $92.5K (46x)
+👨‍👨‍👧‍👦 Scans (https://t.me/ttfbotbot?start=sb): 54 | Votes (https://t.me/ttfbotbot?start=v-831862653e91bcdb7376da2023e3fc43): 0 👍, 0 👎 | Calls (https://t.me/spydefi_bot?start=2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump)
+🔗 Website (https://pump.fun/) | Twitter (https://x.com/Fattooinc/status/2067970869545095648?s=20)
+
+📊 TS: 1.000B
+👩‍👧‍👦 Holders: 666 | Top10: 28.08%
+💸 Airdrops: 42 for a total of 2.09%
+🥡 Block 0 Snipes: 34.3% | 0.21 SOL
+👶🏽 Fresh Wallets: 4 | 18.32% FATTOO
+
+💵 TEAM WALLETS
+Deployer (https://solscan.io/account/2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) 0.00 SOL | 0.0% FATTOO
+
+DYOR/NFA: What do these mean? (https://t.me/ttfbotbot?start=legend)
+
+
+Asteroid Shiba (https://etherscan.io/address/0xf280b16ef293d8e534e370794ef26bf312694126) Chart for @Innocent Diwe🐾 1.17s
+
+💲 Price: $0.00009272
+💰 MC: $39.01M | Liq: $1.27M (3%)
+💵 Launch MC: $17K (2277x)
+👆 ATH: $213M (12409x)
+📈 24h: +82% | V: $19M | B:6117 S:4958
+📊 Pho (https://photon.tinyastro.io/en/r/@ttfbot/0xf280b16ef293d8e534e370794ef26bf312694126) | Pad (https://trade.padre.gg/trade/eth/0xf280b16ef293d8e534e370794ef26bf312694126?rk=ttf) | Blz (https://web.blazingapp.com/dashboard/pro/eth?token=0xf280b16ef293d8e534e370794ef26bf312694126&affiliateId=ttfbot) | GT (https://www.geckoterminal.com/eth/pools/0xf280b16ef293d8e534e370794ef26bf312694126?utm_source=telegram&utm_medium=ttfbot) | DT (https://www.dextools.io/app/en/ether/pair-explorer/0xf280b16ef293d8e534e370794ef26bf312694126) | DS (https://www.dexscreener.com/ethereum/0xf280b16ef293d8e534e370794ef26bf312694126)
+⚡ Blz (https://t.me/blazing_trading_bot?start=ref_ttfbot_0xf280b16ef293d8e534e370794ef26bf312694126) | Ban (https://t.me/BananaGunSniper_bot?start=snp_TTF_0xf280b16ef293d8e534e370794ef26bf312694126) | Bit (https://t.me/BitFootBot?start=buy=0xf280b16ef293d8e534e370794ef26bf312694126_ETH_ttfbot) | XCept (https://t.me/XCeption_bot?start=ttf-0xf280b16ef293d8e534e370794ef26bf312694126) | Star (https://t.me/starbotprobot?start=ref-ttf-0xf280b16ef293d8e534e370794ef26bf312694126)
+
+
+
+TTF Trending Last 1 Hour
+
+1️⃣ SPCX69 (https://t.me/ttfbotbot?start=0x56B83F168938cae0b6aE6E836027a0E76CA5151A) - ETH | Scans: 69 |  📈 (https://t.me/ttfbotbot?start=chart0x56B83F168938cae0b6aE6E836027a0E76CA5151A)
+MC: $189K | 342% | V: $246.5K
+
+1️⃣ FATTOO (https://t.me/ttfbotbot?start=sol-2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump) - Sol | Scans: 52 |  📈 (https://t.me/ttfbotbot?start=solc-2bJLvamPNX7iTxZwtsu3SL2fLuSgejfB4rxtYeaipump)
+MC: $58K | 97% | V: $235.2K
+
+1️⃣ GTAVI (https://t.me/ttfbotbot?start=0x07f2eA62Cf15456AD9Ae7038Bc6bE56cc5eb31db) - ETH | Scans: 42 |  📈 (https://t.me/ttfbotbot?start=chart0x07f2eA62Cf15456AD9Ae7038Bc6bE56cc5eb31db)
+MC: $649K | 35937% | V: $1.01M
+
+1️⃣ Solana (https://t.me/ttfbotbot?start=sol-5kuTkFHSha6Dc4po34fhHVYfUf9XzqFSGxRN41rmpump) - Sol | Scans: 38 |  📈 (https://t.me/ttfbotbot?start=solc-5kuTkFHSha6Dc4po34fhHVYfUf9XzqFSGxRN41rmpump)
+MC: $79K | 188% | V: $650.8K
+
+1️⃣ GARY (https://t.me/ttfbotbot?start=0x4D0698baC60B6b4d60E95a01cFc13A7c8189f446) - ETH | Scans: 34 |  📈 (https://t.me/ttfbotbot?start=chart0x4D0698baC60B6b4d60E95a01cFc13A7c8189f446)
+MC: $10K | 717% | V: $53.6K
+
+1️⃣ ManicDoge (https://t.me/ttfbotbot?start=0x280C191BcCf3cf539A741c3944889F803A9EF064) - BSC | Scans: 24 |  📈 (https://t.me/ttfbotbot?start=chart0x280C191BcCf3cf539A741c3944889F803A9EF064)
+MC: $27K | -2% | V: $61.00
+
+1️⃣ SPCX (https://t.me/ttfbotbot?start=0xCB891c8f1e3a4D04229E4D871dc27124411D8952) - ETH | Scans: 19 |  📈 (https://t.me/ttfbotbot?start=chart0xCB891c8f1e3a4D04229E4D871dc27124411D8952)
+MC: $1M | -63% | V: $1.24M
+
+1️⃣ RICH (https://t.me/ttfbotbot?start=sol-89SWf1zfiWSp3doPhM4vstqxjTF1iozs1EU8noN6pump) - Sol | Scans: 17 |  📈 (https://t.me/ttfbotbot?start=solc-89SWf1zfiWSp3doPhM4vstqxjTF1iozs1EU8noN6pump)
+MC: $2K | -92% | V: $165.9K
+
+1️⃣ Navi (https://t.me/ttfbotbot?start=sol-AdEDzMybuRBJBoF4Hm17qbp5yqsXEyNjnYFMDH2mpump) - Sol | Scans: 17 |  📈 (https://t.me/ttfbotbot?start=solc-AdEDzMybuRBJBoF4Hm17qbp5yqsXEyNjnYFMDH2mpump)
+MC: $11K | -55% | V: $541.1K
+
+1️⃣ CAPS (https://t.me/ttfbotbot?start=sol-GtUNKUqZ5Gpa1MYDDeHYUkf3zwCFG8neb5p1sR34pump) - Sol | Scans: 17 |  📈 (https://t.me/ttfbotbot?start=solc-GtUNKUqZ5Gpa1MYDDeHYUkf3zwCFG8neb5p1sR34pump)
+MC: $11K | -60% | V: $46.8K

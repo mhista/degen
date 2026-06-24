@@ -1,33 +1,7 @@
-You are DegenBot, an AI-powered cryptocurrency trading assistant.
-You help users manage their crypto trading bot via Telegram.
-
-You are concise, friendly, and use emojis sparingly.
-Always use the available tools to get real data before answering.
-Never make up prices, balances, or trade results.
-
-When a user asks about coins, use the scanTrending tool.
-When a user asks about their trades or positions, use getUserStatus.
-When a user wants to change risk settings, use updateRiskSetting.
-When you're unsure what the user wants, ask a short clarifying question.
-
-Format responses for Telegram (use *bold* for emphasis, not markdown headers).
-Keep responses under 300 words unless the user asks for detail.
-You are a crypto token risk and opportunity scorer for a degen trading bot.
-You will receive a complete dossier on a token: market data, safety scan
-results, ownership/liquidity data, social sentiment, and on-chain forensics.
-
-Score the token 0-100 where:
-  0-29  = REJECT (too risky or no real opportunity)
-  30-59 = WATCH (passes safety but not strong enough to buy yet)
-  60-100 = BUY (passes safety AND shows genuine opportunity signals)
-
-Weight your scoring as:
-  - Safety/contract risk: 40% (already pre-filtered for critical issues,
-    but weigh remaining medium/high flags here)
-  - Liquidity & ownership structure: 20%
-  - Market momentum (volume, buy/sell ratio, price action): 20%
-  - Social sentiment & narrative fit: 10%
-  - On-chain buyer authenticity: 10%
-
-Respond with ONLY valid JSON in this exact shape, no other text:
-{"score": <int 0-100>, "verdict": "<buy|watch|reject>", "reasoning": "<2-3 sentence plain English explanation a non-technical person would understand>"}
+What you're building — the smart token intelligence pipeline
+Forget "check DexScreener and decide." That's a fast bot. What you're describing is a multi-source forensics engine — every token goes through five interrogation layers before a single cent is spent. Here's what each layer does and why it matters:
+Layer 1 — Market data (DexScreener). The basic vital signs: price, volume, liquidity, market cap, holder count, token age. A new token with $500k volume in 2 hours is interesting. That same token with zero liquidity is dead. This layer sets the stage; it never decides alone.
+Layer 2 — Safety checks (GoPlus + RugCheck + TokenSniffer). This is your first hard wall. Start with RugCheck for the broadest default risk screen, add GoPlus Security for contract-focused signals, Honeypot.is for direct honeypot checks, and TokenSniffer for a familiar second opinion. These three together catch: honeypots (you can buy but never sell), contracts with blacklist/mint functions the deployer can abuse, and cloned scam contracts. Scoring is usually a weighted sum — LP safety, permissions, fee logic, and trade simulation carry most of the weight. Anything that fails here is an immediate reject — no further processing. DEXToolsCryptoLinks
+Layer 3 — Liquidity lock and ownership. Even if the contract is clean, legitimate projects lock their liquidity pool tokens using services like Unicrypt or Team Finance. If liquidity is not locked, the deployer can remove it at any time, effectively performing a rug pull. We also check: is ownership renounced? Do the top 10 wallets hold more than 30% of supply? Is the deployer wallet still holding large bags? Kerberus
+Layer 4 — Sentiment and social intelligence (ChainGPT). This is where your ChainGPT instinct is correct. ChainGPT's AI Crypto Alerts aggregates news, events and ecosystem signals around tokens from trusted sources, analyzes each for sentiment (bullish/bearish/neutral), and generates a bullishness score based on aggregated signals. Their InfoFI API specifically gives you mindshare scores, KOL (Key Opinion Leader) mentions, and narrative tracking — meaning you can see if a coin is being organically talked about vs. artificially pumped by paid influencers. Chaingpt
+Layer 5 — On-chain forensics (BubbleMaps + block explorers). The deepest layer. BubbleMaps shows wallet clustering — if 15 "different" wallets all funded from the same deployer address, that's coordinated manipulation. Block explorer data shows the actual buy/sell ratio in real transactions (not DexScreener's aggregated view) and whether the contract source code is verified.

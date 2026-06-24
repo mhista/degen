@@ -1,0 +1,47 @@
+# docker-compose.yml
+#
+# Unified production-ready local/production Docker stack.
+
+version: '3.9'
+
+services:
+  degenbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: degenbot
+    restart: unless-stopped
+
+    # Port mapping: host:container
+    ports:
+      - "8080:8080"
+
+    # Load environment variables from the server package .env
+    env_file:
+      - degenbot_server/.env
+
+    # All secrets via environment variables
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - AI_PROVIDER=${AI_PROVIDER:-google}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SERVER_PORT=8080
+      - WEBHOOK_BASE_URL=${WEBHOOK_BASE_URL:-}
+
+    # Health check — docker compose ps shows health status
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    # Resource limits — adjust based on your VPS
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'

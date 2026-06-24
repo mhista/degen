@@ -1,0 +1,2007 @@
+This files shows the excpected json data for checking honeypot, and other informations on
+the api.honeypot.is. this is for ethereum, bnb/bsc, base.
+to know whihc coin belongs to which chain out of those three, a call can be made switching the chain id, and any oneyone that does not return
+{"code":500,"error":"internal error"}
+and further calls for that particular token/address wins. results can be save on a 30 seconds bases so any further call reuses the one saved on db, this can help to prevent persistant calls
+this time based can be toggled on/off, on means time  based, off means, request desnt pass through the db, but goes directl to the api.
+pattern to follow to fetch coin details and check honeypot
+1. Get pairs
+2. Token info 
+3. Top holders
+4. Is honeypot
+5. Get contact verification
+
+BNB/BSC HONEYPOT DETECTION DONE HERE
+
+https://api.honeypot.is/v1/GetContractVerification?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d&pair=0xcaaf3c41a40103a23eeaa4bba468af3cf5b0e0d8&chainID=56
+{"HasProxyCalls":false,"Contracts":{"0xCae117ca6Bc8A341D2E7207F30E180f0e5618B9D":true}}
+https://api.honeypot.is/v1/TokenInfo?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d&chainID=56
+{"Name":"ARK","Symbol":"ARK","Decimals":18,"Address":"0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d","TotalSupply":38053989965803300863712477}
+https://api.honeypot.is/v1/GetPairs?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d&chainID=
+
+[
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V2: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0xcaaf3c41a40103a23eeaa4bba468af3cf5b0e0d8"
+    },
+    "Reserves": [3.5559362359490005e+25, 3.422237114209483e+24],
+    "Liquidity": 71060478.4834352,
+    "Router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "CreatedAtTimestamp": 1756206977,
+    "CreationTxHash": "0x5e7df21b39066e3bd095b4ecfa2db82dae0421235869c7b31f4488d62116e991"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x8e9faa69a144e225a406a40724a85f56ce460ccd"
+    },
+    "Reserves": [4.966708627149423e+18, 122554607203803090],
+    "Liquidity": 9.93341725429885,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1757858190,
+    "CreationTxHash": "0x33bdfa1da2a0a1732708719e93cb6090c09eeb522c8e13ec5482afdd06aafb30"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V2: WBNB-ARK",
+      "Tokens": [
+        "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x9bd148a6f58bba958721e6c6abf7cbe57f08d674"
+    },
+    "Reserves": [3227716233576877, 185555866483325540],
+    "Liquidity": 3.83413955954133,
+    "Router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "CreatedAtTimestamp": 1756284783,
+    "CreationTxHash": "0xf8f8fe185592ea1b8433b9999d120e94b974cf27185292e9fe34c9276df0144c"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x7eaf8a3228eb0d1cc5edef58863fe999329dbc44"
+    },
+    "Reserves": [1.0161691534811834e+18, 109687867278789710],
+    "Liquidity": 2.03045432935181,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1757837794,
+    "CreationTxHash": "0x2e104defdf98f7dd7ca4347988d4608b913b350cdfe797f2cda3c3965e26c8fd"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "Uniswap V2: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x3221ceb9a89504f9d1158721bac13949d4b0ebf0"
+    },
+    "Reserves": [890119205465770500, 87379532532657120],
+    "Liquidity": 1.77894417760679,
+    "Router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "CreatedAtTimestamp": 1764947334,
+    "CreationTxHash": "0xf4d7b6909718261af041ce9c1f3b89bd61e840458fd0c71fa89a5111ee812a4e"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x0ef087f2ca555ac845f064e471a5e5c55a148d1f"
+    },
+    "Reserves": [7415305620908779, 160754931319408],
+    "Liquidity": 0.0148136746837794,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1756302496,
+    "CreationTxHash": "0xe4b3ad597c0e33207cc9e1ab3347a1ebc9a3a7095dc021b4f52d579ceb7f1eb8"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: USDT-ARK",
+      "Tokens": [
+        "0x55d398326f99059ff775485246999027b3197955",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x637a73e2d3d024c27ae642794f05424035347349"
+    },
+    "Reserves": [4195638856992730, 274902125709519],
+    "Liquidity": 0.0083912777139854,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1760536600,
+    "CreationTxHash": "0x0ea1c06ae4c0307d408624e8089fe0a7ae29778f28a788ddf697cf56383e9cd5"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: WBNB-ARK",
+      "Tokens": [
+        "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x84747ca5e1b3061c09ec802b035c840023863afd"
+    },
+    "Reserves": [106150179367, 2],
+    "Liquidity": 0.00022735245423892,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1760730776,
+    "CreationTxHash": "0x5b48e2563c43b3f46bfee0433e3855c65eaa01ac99d2fe7b676cd42e4c8d45fe"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V3: WBNB-ARK",
+      "Tokens": [
+        "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d"
+      ],
+      "Address": "0x9d4bc9389274c7e98912aee4be16a0ac72a23883"
+    },
+    "Reserves": [2864159968, 216000000003],
+    "Liquidity": 0.0000065526825312,
+    "Router": "0x1b81d678ffb9c0263b24a97847620c99d213eb14",
+    "CreatedAtTimestamp": 1760582780,
+    "CreationTxHash": "0x0c399bef404d238399d87b56eb47948e066c5ee27b0beba7a3ea31512a25aef9"
+  },
+  {
+    "ChainID": 56,
+    "Pair": {
+      "Name": "PancakeSwap V2: ARK-FEO",
+      "Tokens": [
+        "0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d",
+        "0xfa093eafe552ac3e3046f50a68fdf8c86d47e1cc"
+      ],
+      "Address": "0x5ab6be38e39d6ee5b378907ef6666478c7542929"
+    },
+    "Reserves": [7372052170027003, 201931420979144260],
+    "Liquidity": 0,
+    "Router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "CreatedAtTimestamp": 1758301175,
+    "CreationTxHash": "0x65f208fcf392b2f2c39ccc51cf0d21ccd85e37ac8cbe473bb79b023731041a5d"
+  }
+]
+https://api.honeypot.is/v1/TopHolders?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d&chainID=56
+
+
+{
+  "totalSupply": "38053989965803300863712477",
+  "holders": [
+    {
+      "address": "0xd1D95292F450b665566df4c4255615eF4Ed9BD0B",
+      "balance": "25022359466617954704528347",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x8501168656FcaC4628F6910CcABEA8B64Ebe5BD4",
+      "balance": "7574174136394780257662433",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8",
+      "balance": "4183909317134758939632960",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x100844Ccd4AF887D123c0AC4a9671E0AB5DD9De2",
+      "balance": "451917127376042476855812",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x7DFAd978e43d47bAe564C2CBBa88F280474a7C24",
+      "balance": "177229795451486746906859",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xd9D1c7dCf7CB6181A61ed0E70F64fe7Ddd4B9495",
+      "balance": "104258252503341806599850",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x318Abf7303146e2B63E39aF9E0Bc7c65372981C2",
+      "balance": "14367120087000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x5e9e166fD11989380C136EFA0d773aA60C29F278",
+      "balance": "9474144513981225671291",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xf133A323cCCd6EC88E82cD414ce8965Ce72B3C7b",
+      "balance": "4602219301651785184663",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x47998EA6DB0a2db14b9Ea39a70a6B49bB94b5E5A",
+      "balance": "2187800000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xbc5cB02da834387c15a2f4856b519a07A173a39D",
+      "balance": "2095136905697152897952",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x5b244b0dd14B513D39459c895EF82f92e27f0F9E",
+      "balance": "2014920000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x014e1BCAD712cD5531CD52CB49775B9C1D20cDED",
+      "balance": "1940170000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x07964f135f276412b3182a3B2407b8dd45000000",
+      "balance": "1790911371464217105786",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x0278403DBE444A529E30ae87706e34fA98B11880",
+      "balance": "1657100265861297442771",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xAf5c185B63F531b09eC147ADAcaF030c9F6E9281",
+      "balance": "1588907690130156787326",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x3763557212ed76F038228f73D6061A7117fC2600",
+      "balance": "1540810221213772566060",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x140D364F7E9E1A193Ee3A6757a5b192200a74da6",
+      "balance": "1382000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xc918DA040650481354bA00B41F41bEbF58255227",
+      "balance": "1267075007155835621808",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9C8e74a6940406473b3814Afb98Fb59AcEDfb0a7",
+      "balance": "1216000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x07C4d889533C03b2FC36D489cCDC2f39e19C0057",
+      "balance": "1135951911015112245764",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xE014c7f6a1Ff4449a1A2318a0835eeB5190C1009",
+      "balance": "1072676132842088944242",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x49DF7f95ee2b7093234976F62BA2513332696743",
+      "balance": "1049873500000000000000",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x739Fe436079Af8a4d775d8e348404878E8DBfc9A",
+      "balance": "1043000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xbB52798648b0CB70E70BB426E1e1A20A7AB68fcC",
+      "balance": "1011470000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3FE7BDa7008567D8d25FA4F78f6b433416847cb4",
+      "balance": "1000671304069588384855",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x5C2f877dEF6c6D237A0C2b635c65aE214D70EeC4",
+      "balance": "1000540890984734925719",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xeA55D5682a1683270b618947424d0134a992D825",
+      "balance": "987930000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7F10cC3a6bD2A2b8C153c1631Df65DC35a081be9",
+      "balance": "958720000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x59f4a9Bb5a5DE96fc9E4318896D853272824028f",
+      "balance": "923634128470972872818",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x6B0Ed91d663Ecd078C8051FC4C91B7Db139c3829",
+      "balance": "923160054654264459196",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xA84aE920F51f25f775e6752FE6496D960c59347e",
+      "balance": "906990000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xDe1DBB3749c4124DdAF23112D254Ebf235Fb2d26",
+      "balance": "904454937780771640678",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x18f22C98aCbFe74a8101c8B73084808eD4A5a80B",
+      "balance": "899900000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x163e7f0Ee04Aa47a60C5BCD35E87EFdc500f320f",
+      "balance": "885446779798636847620",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x109E3104eA8De35B0eea63B4Abb4E159789394CC",
+      "balance": "883040000000000000000",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x1205CFEdFb1e64dB04951097b7882a45ecDFc466",
+      "balance": "871764568590815053688",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9D97d850a6bBB92AC38414232b0cF1AdFAa0E1ed",
+      "balance": "847210000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7B109D1D1031C2df5A0565f7d67b4Cf3F16Af39a",
+      "balance": "816000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xACF38Db45ac2073E3aF07239773C974a5eD5D604",
+      "balance": "806887803531250073541",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xE34C1dFd1F4E0DAd21A92E1580191Bd98db0F05F",
+      "balance": "806538389203172883862",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x47AfA487Ef1950c6547bb704Acf9AE6a4fEE7A46",
+      "balance": "800000000000000000000",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x68821deFa63a5f9D5D5EbC22d5527915D06a3877",
+      "balance": "800000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x1d9e4248FC04b3E6ee18E267A7cf15846cAAaBd9",
+      "balance": "797032255192751513166",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x2d6bf956daC045cECb0B401F46f94319BB5DA6a5",
+      "balance": "794200000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x4c046ca69989234f77650fAC3FA5D91b9f31aAaF",
+      "balance": "783180022319127828776",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xee741A0889199b3395A929b70BC4a37519Fb069E",
+      "balance": "768614474896980179358",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x14a2fc4d9C8298d69893cbdcF072843Eec0567F4",
+      "balance": "764153856260628430387",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xB1E230AaB6fA60970C31EE2C5335836082Cba330",
+      "balance": "762108371108236263261",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xf375BffcBBccC3e46fEc09E16871966B3cB650a5",
+      "balance": "759430583364328851877",
+      "alias": "",
+      "isContract": true
+    }
+  ]
+}
+
+https://api.honeypot.is/v1/TopHolders?address=0xcaaf3c41a40103a23eeaa4bba468af3cf5b0e0d8&chainID=56
+{
+  "totalSupply": "10370329806776168132724570",
+  "holders": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "balance": "7750121671984533144532276",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x000000000000000000000000000000000000dEaD",
+      "balance": "2620134430615757645590119",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xfb1F5fc508bfB2a173FBAf455fEAA35ea2f57576",
+      "balance": "60014336217859810346",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x902E8A1Cad81e2820271E68433426b48117Df792",
+      "balance": "3605432929551201045",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x89C803F670B8090357C00Bdb8Bc8f815A743a46a",
+      "balance": "3131106525807039942",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x412782fB3122f39f559Ef62698C2F41e7Aff8855",
+      "balance": "2651531783652829991",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x01e7Fd1A11C36689e471102C221be2aeE5555d2D",
+      "balance": "1746250707251680524",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x2511030f3d7d4935B471503d3eA36B08bFff88be",
+      "balance": "734138119182438366",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xA63B853a120B3A314dD935410EcEe082FC60cee6",
+      "balance": "422887248743869877",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x942aFa75e2F8e92647fAAFeC7D0Aae0e5D33c02e",
+      "balance": "405691426693004682",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x726408E033Ffc5Ed27FDd8d71165A010E01a9127",
+      "balance": "207585046145791269",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x162CDC33B923AD5fE6280AB0904DF952Ab0A233F",
+      "balance": "207515487955290056",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x9011fC8F23BcFd78e6277F9239fF95A6e1206678",
+      "balance": "175356345327230522",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x841D6116B3B6446744dA6C69aAc3e7f34b18D1f4",
+      "balance": "155919095084222030",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9D8EB4d1543F64F08Bd6D92944a3bACF953c246D",
+      "balance": "103814034456468432",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x826F5CcDB20044CaF36e31328652c4396bf01E65",
+      "balance": "60635806810849947",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x946477A4B5fd966e60bfd7224f38fDeCC2E8be04",
+      "balance": "24343479873614632",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x3B3060823Fd0b26211CA3C2e3090Eac14cf526Cc",
+      "balance": "19691757081689638",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x80d8d475Ab822Fe91D3b6F3529E110Be8e104AE9",
+      "balance": "19454118726625814",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xfe7364a43f1fbe03f7Bef8980a55e2ad3Bfb147A",
+      "balance": "14043019915522073",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xe463F0C569A3fF50314435727FD2de8DE01655EB",
+      "balance": "3792240020369090",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF",
+      "balance": "441143502239089",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x1f2757aE513E182f4eC7F7FAF3D9Df0F9d30088D",
+      "balance": "134216914580618",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xb7Ee8C34aEC1521752E308EaAd892cceCF41b2DB",
+      "balance": "75087947476369",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xDB2B5259Dc7F21dFb19417f8A635096F1901890A",
+      "balance": "38832623118",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x238a358808379702088667322f80aC48bAd5e6c4",
+      "balance": "6134705",
+      "alias": "",
+      "isContract": true
+    }
+  ]
+}
+
+// Honey pot get requests and expected result
+https://api.honeypot.is/v2/IsHoneypot?address=0xcae117ca6bc8a341d2e7207f30e180f0e5618b9d&pair=0xcaaf3c41a40103a23eeaa4bba468af3cf5b0e0d8&chainID=56
+{
+  "token": {
+    "name": "ARK",
+    "symbol": "ARK",
+    "decimals": 18,
+    "address": "0xCae117ca6Bc8A341D2E7207F30E180f0e5618B9D",
+    "totalHolders": 791773
+  },
+  "withToken": {
+    "name": "Tether USD",
+    "symbol": "USDT",
+    "decimals": 18,
+    "address": "0x55d398326f99059fF775485246999027B3197955",
+    "totalHolders": 64238009
+  },
+  "summary": {
+    "risk": "low",
+    "riskLevel": 1,
+    "flags": []
+  },
+  "simulationSuccess": true,
+  "honeypotResult": {
+    "isHoneypot": false
+  },
+  "simulationResult": {
+    "buyTax": 0,
+    "sellTax": 2.49,
+    "transferTax": 0,
+    "buyGas": "154456",
+    "sellGas": "115935"
+  },
+  "holderAnalysis": {
+    "holders": "17754",
+    "successful": "17754",
+    "failed": "0",
+    "siphoned": "0",
+    "averageTax": 2.48985974991551,
+    "averageGas": 161803.065168413,
+    "highestTax": 2.49,
+    "highTaxWallets": "0",
+    "taxDistribution": [
+      {
+        "tax": 0,
+        "count": 1
+      },
+      {
+        "tax": 2,
+        "count": 17753
+      }
+    ],
+    "snipersFailed": 0,
+    "snipersSuccess": 0
+  },
+  "flags": [],
+  "contractCode": {
+    "openSource": true,
+    "rootOpenSource": true,
+    "isProxy": false,
+    "hasProxyCalls": false
+  },
+  "chain": {
+    "id": "56",
+    "name": "Binance Smart Chain",
+    "shortName": "bsc",
+    "currency": "BNB"
+  },
+  "router": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+  "pair": {
+    "pair": {
+      "name": "PancakeSwap V2: USDT-ARK",
+      "address": "0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8",
+      "token0": "0x55d398326f99059fF775485246999027B3197955",
+      "token1": "0xCae117ca6Bc8A341D2E7207F30E180f0e5618B9D",
+      "type": "UniswapV2"
+    },
+    "chainId": "56",
+    "reserves0": "35559362359490004252599362",
+    "reserves1": "3422237114209483043827489",
+    "liquidity": 71060478.4834352,
+    "router": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+    "createdAtTimestamp": "1756206977",
+    "creationTxHash": "0x5e7df21b39066e3bd095b4ecfa2db82dae0421235869c7b31f4488d62116e991"
+  },
+  "pairAddress": "0xCAaF3c41a40103a23Eeaa4BbA468AF3cF5b0e0D8"
+}
+
+
+ETHEREUM HONEYPOT DETECTION DONE HERE 
+
+https://api.honeypot.is/v1/TokenInfo?address=0xf280B16EF293D8e534e370794ef26bF312694126&chainID=1
+{"Name":"Asteroid Shiba","Symbol":"ASTEROID","Decimals":9,"Address":"0xf280b16ef293d8e534e370794ef26bf312694126","TotalSupply":420690000000000000000}
+https://api.honeypot.is/v1/GetPairs?address=0xf280B16EF293D8e534e370794ef26bF312694126&chainID=1
+[
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V2: WETH-ASTEROID",
+      "Tokens": [
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x76a411f14a704099ba476ce8dffc288a53295218"
+    },
+    "Reserves": [7.540984705679732e+20, 7.802971246578338e+18],
+    "Liquidity": 2570103.32542036,
+    "Router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "CreatedAtTimestamp": 1725963503,
+    "CreationTxHash": "0xfb06820f674a5a0cd821848393b3838fb8c5871554c19fa9e99cb4a4e8a07395"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: USDC-ASTEROID",
+      "Tokens": [
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x168e9b3c9ddfb013a4130276f9c500a3ce50fde7"
+    },
+    "Reserves": [137322886759, 379875809346183940],
+    "Liquidity": 274597.435861861,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1776557579,
+    "CreationTxHash": "0x52941c1f319ec35b12a7c1500cfc16da468bd921215e257e0407f58c084c92da"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: WETH-ASTEROID",
+      "Tokens": [
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x0e55db2d5e07cc6b067f352ba35a6beafb33c282"
+    },
+    "Reserves": [1.924921257640089e+19, 378072015448423400],
+    "Liquidity": 65604.781318638,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1776588203,
+    "CreationTxHash": "0x5176fe6a1322f324f1fcf5705bb334d7567c969b9cc11007f70746d1925627d1"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: WETH-ASTEROID",
+      "Tokens": [
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x53e3d506f468c4bc30cc8caa21eb7e56c2fa2d55"
+    },
+    "Reserves": [7.24030665238245e+18, 207301707539555870],
+    "Liquidity": 24639.1979564566,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1725965651,
+    "CreationTxHash": "0x73f1b122a038df537a4673b2a3b068892252fcc5f459fd86ffa8b5867c21bf0b"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: USDC-ASTEROID",
+      "Tokens": [
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x08989c58bc6b18e8e2910815309a89de4f1275b2"
+    },
+    "Reserves": [150080505, 14307862957740956],
+    "Liquidity": 300.11358456042,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1776404543,
+    "CreationTxHash": "0x519436770a3d531b90f671c403299478a7bc2e776b40bca3c5759d20026804b4"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: USDT-ASTEROID",
+      "Tokens": [
+        "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0xc41bb16bb5f7121947e381bb2b20e2a723f39163"
+    },
+    "Reserves": [10496936, 60233221296793],
+    "Liquidity": 20.991604661824,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1776820271,
+    "CreationTxHash": "0x753ff9ec763cceaf94a041058df45ba451fc00367d8286ace603a4c9eec53129"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V3: USDT-ASTEROID",
+      "Tokens": [
+        "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x76718094c323e3f0d99a0521dfc66523d1e96083"
+    },
+    "Reserves": [10255, 129348360880],
+    "Liquidity": 0.02050575443,
+    "Router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+    "CreatedAtTimestamp": 1776406331,
+    "CreationTxHash": "0x52a2bf150ed15c065b006755a38c3ea3df295fbae90ef6a8381b3822a157f48d"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V2: USDC-ASTEROID",
+      "Tokens": [
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x2c7c40845c41a09e31790325497181b1d41c0e44"
+    },
+    "Reserves": [5579, 17955918168],
+    "Liquidity": 0.011154295544,
+    "Router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "CreatedAtTimestamp": 1776432527,
+    "CreationTxHash": "0x23b6a8c51de393e37a8337f9d6219d0d130f05696196dbdef4f62bc4d7d289f9"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V2: KABOSU-ASTEROID",
+      "Tokens": [
+        "0xceb67a66c2c8a90980da3a50a3f96c07525a26cb",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x2cc3696211db0d64c58fd5f61d661b54c7c5ea2b"
+    },
+    "Reserves": [411, 3490],
+    "Liquidity": 0,
+    "Router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "CreatedAtTimestamp": 1725968135,
+    "CreationTxHash": "0xd463d449b98450d3bf95a6909b447ac1a26016424cf3638bce29602cd12fcc64"
+  },
+  {
+    "ChainID": 1,
+    "Pair": {
+      "Name": "Uniswap V2: ba-ASTEROID",
+      "Tokens": [
+        "0xec19bda43471653742952a1c674ef9c57c001132",
+        "0xf280b16ef293d8e534e370794ef26bf312694126"
+      ],
+      "Address": "0x0468073d35491fcf42bd1c04b5d8cf1e77366876"
+    },
+    "Reserves": [7.373558470841088e+20, 7270464439],
+    "Liquidity": 0,
+    "Router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "CreatedAtTimestamp": 1776775535,
+    "CreationTxHash": "0x82392e92b7b9da10cff144817b11f6795eacf531b4e26f37b1cdf588071b0952"
+  }
+]
+
+https://api.honeypot.is/v1/TopHolders?address=0xf280B16EF293D8e534e370794ef26bF312694126&chainID=1
+{
+  "totalSupply": "420690000000000000000",
+  "holders": [
+    {
+      "address": "0x2D2EB604b6c0Cb5559B233500F522a41c09C36FC",
+      "balance": "8384136665601087312",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9642b23Ed1E01Df1092B92641051881a322F5D4E",
+      "balance": "8348723182544892920",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3C7e4639F8cf926351cC1616361ca88E0396183C",
+      "balance": "8017088161537729455",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x76A411f14A704099Ba476CE8dFFC288a53295218",
+      "balance": "7541776654742354711",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x2aFfB7f6C7f666043A5418dC4cB0b4F80bc767bD",
+      "balance": "4607359620812097328",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x6910C590D8503A1f3EF5Ea9b64a5d7C7f3b5FEDa",
+      "balance": "4459198503369354028",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xdccfB0fa09250F6a9e3A38197536d4c45914Feb6",
+      "balance": "4206991339620130726",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x5638484ba2d2F1D1D35020572B0Aa439a9869192",
+      "balance": "4188809664424108093",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xCc9ed84DcAc044fDcBF72d3577C105099A008084",
+      "balance": "3823896011589666613",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x467A40C0a3F271f87498A93ab05c1099003346FF",
+      "balance": "3711356364033349204",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3C63A881E4EA534BE8B7a596BFFDec86554480E4",
+      "balance": "3538666499814227811",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xA6eFf0BdF849832e2611d41E1F0cfAe4bcAC51e8",
+      "balance": "3265988064326402688",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x77EC040154583286586E88BD53de4d466f72514F",
+      "balance": "3201901437284369451",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xD20C77d05669A56Ad239362a3557f82361CeF1cf",
+      "balance": "3143747477430840848",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9a0CE7d3C4b190C348486e3A07E738Ce7160a777",
+      "balance": "3071810727438700000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xf695Ed18ab6Dcd088ef3118faCDe6eA1Ff7d42A9",
+      "balance": "3012192981356638922",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9f3456016d3D5d7066a8B7d2138515D733553cb2",
+      "balance": "2685830911623373077",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x8b6f7FBe7C49a1e52E5B68035965F49a82D32CcF",
+      "balance": "2638556390010260856",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x860B15d380b19ca3D37EA7C3af0e2Bb26b420c27",
+      "balance": "2233756287591779034",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x000000000004444c5dc75cB358380D2e3dE08A90",
+      "balance": "2218783981254271743",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x97DA20Dc2BD46174dA79D71a385B7248527fbEE6",
+      "balance": "2139940060892044145",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x34827bb39465D7d9d05d501320E748f9e0a5a5a3",
+      "balance": "2107707293567976893",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9bc920b65F5c119bad954214F9AC01B508a3e828",
+      "balance": "2102803086660116935",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3eAAE394739A73e8D6082b2986b12400310E708A",
+      "balance": "2099089356108570127",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x1efABD4D9436EBDD90F6A471542A891A36c70ff1",
+      "balance": "1905791217644918487",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3e694E7D4d1740087e82153CE391351AcF6E5Eae",
+      "balance": "1888373918293176295",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xe7AA802E19C973690f1928AF8Fac88dB0AFefc6A",
+      "balance": "1884244376881951464",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x50C085b166598cf8d4e1b73e1563a0B5612CC5B6",
+      "balance": "1793813608827033411",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x4f7dD7905299c78E2da0B12Fd99c965Bef341693",
+      "balance": "1775789803877981611",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xd8F49165098943d450a52BD58d1B5de0D60d9ffD",
+      "balance": "1743654639564716095",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x9E69eee24592F3ED9e65470572C628bBA1ff9e06",
+      "balance": "1723360965989434785",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x4EC4F3DeD3c217Cd753A5371B63AaD3d12b68483",
+      "balance": "1721763289794274501",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7132C996Ea3604f238273351F99c4156d8E90aFD",
+      "balance": "1703348409849768288",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x314d27A474d7A98Bd182E20bb8A0163936fd1dc9",
+      "balance": "1656279520426650324",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x02F6a09FaEba0aCB2CC7014A516328422336EaaA",
+      "balance": "1639436627403343112",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x1b697D0eFA070c05Cb6D7239B8b11682a89f79e7",
+      "balance": "1625229651144000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x6625854c88ED110c42dA06a2B9755aE5dE8a437A",
+      "balance": "1619439617030547362",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7DD4C4EBa4DA65ED85A5e56Fa7cA1068b3aB920a",
+      "balance": "1612762515500680531",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x71A524F5c3fED011bf1C4507D9FE3617e354Fc6E",
+      "balance": "1579509250474296539",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x5E77b3373317f6185D5025BA876dECc56F5Cda5d",
+      "balance": "1565198308259820400",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x02fD99dD82F640343E548Abc0a4c31B664e0eB84",
+      "balance": "1542369691949917984",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x98bB38a7FD1074F40484D23bE27507203ce9cd49",
+      "balance": "1507665115641926835",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x60c02CEa8e11D65568881341A1c9e80c77777777",
+      "balance": "1475175634487353565",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x707eaa691e0bd29882695001C362625B1dd66318",
+      "balance": "1468180073194375690",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7eEBa9A791a793b21F188079E9b5d466D3d129aC",
+      "balance": "1451901045776474882",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x6bc5f9B852fC1aF6E6362b4bF5567C798479aD4a",
+      "balance": "1433061911912317002",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x26A7c82571a438C860Ab140859DACa2142d0C656",
+      "balance": "1416577031094029328",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x7da7186e67195e38B8f4D3003751410103374784",
+      "balance": "1358684756527302254",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xC32b335A4225268cedC66DdF09d274ecd730952e",
+      "balance": "1350035154053187171",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x1e486D12AC5E6D69622c46AC0E8D32D74Cb8d53b",
+      "balance": "1332848460293301356",
+      "alias": "",
+      "isContract": false
+    }
+  ]
+}
+
+https://api.honeypot.is/v1/TopHolders?address=0x76a411f14a704099ba476ce8dffc288a53295218&chainID=1
+{
+  "totalSupply": "21065542460541031373",
+  "holders": [
+    {
+      "address": "0x000000000000000000000000000000000000dEaD",
+      "balance": "20175201680678734880",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xCCA05C5B942F481c74983589D9A12f5a401D8aDC",
+      "balance": "830258231039841330",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xd9f8935c20212d54c2402f1226693FC57F82b4b2",
+      "balance": "40174737978166750",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xa072A266Fb54b0124f77f3A9Ac6fd9F9e4941324",
+      "balance": "17065569794866049",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x64811F180AF377eba928d2615ae1da2Df2eb6b5b",
+      "balance": "1620974222126828",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xc244ab33e6f203b272F7A75e1073A43011858a9E",
+      "balance": "1214192333880506",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x000000000004444c5dc75cB358380D2e3dE08A90",
+      "balance": "5380750509047",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0xeB0CBBA408436997AfD29c50d6A9ffcCf9a2493f",
+      "balance": "1693139258961",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x563Aba531c4630144Bf3E6b9B1b4F73b780B910f",
+      "balance": "603631762",
+      "alias": "",
+      "isContract": true
+    },
+    {
+      "address": "0x0A6144fa659526949998e9e861984d9868A0F6AB",
+      "balance": "14260",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "balance": "1000",
+      "alias": "",
+      "isContract": false
+    }
+  ]
+}
+
+https://api.honeypot.is/v2/IsHoneypot?address=0xf280B16EF293D8e534e370794ef26bF312694126&pair=0x76a411f14a704099ba476ce8dffc288a53295218&chainID=1
+{
+  "token": {
+    "name": "Asteroid Shiba",
+    "symbol": "ASTEROID",
+    "decimals": 9,
+    "address": "0xf280B16EF293D8e534e370794ef26bF312694126",
+    "totalHolders": 27291
+  },
+  "withToken": {
+    "name": "Wrapped Ether",
+    "symbol": "WETH",
+    "decimals": 18,
+    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "totalHolders": 3286600
+  },
+  "summary": {
+    "risk": "low",
+    "riskLevel": 1,
+    "flags": []
+  },
+  "simulationSuccess": true,
+  "honeypotResult": {
+    "isHoneypot": false
+  },
+  "simulationResult": {
+    "buyTax": 0,
+    "sellTax": 0,
+    "transferTax": 0,
+    "buyGas": "177024",
+    "sellGas": "110185"
+  },
+  "holderAnalysis": {
+    "holders": "9866",
+    "successful": "9866",
+    "failed": "0",
+    "siphoned": "0",
+    "averageTax": 0,
+    "averageGas": 133909.48368133,
+    "highestTax": 0,
+    "highTaxWallets": "0",
+    "taxDistribution": [
+      {
+        "tax": 0,
+        "count": 9866
+      }
+    ],
+    "snipersFailed": 0,
+    "snipersSuccess": 0
+  },
+  "flags": [],
+  "contractCode": {
+    "openSource": true,
+    "rootOpenSource": true,
+    "isProxy": false,
+    "hasProxyCalls": false
+  },
+  "chain": {
+    "id": "1",
+    "name": "Ethereum",
+    "shortName": "eth",
+    "currency": "ETH"
+  },
+  "router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  "pair": {
+    "pair": {
+      "name": "Uniswap V2: WETH-ASTEROID",
+      "address": "0x76A411f14A704099Ba476CE8dFFC288a53295218",
+      "token0": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "token1": "0xf280B16EF293D8e534e370794ef26bF312694126",
+      "type": "UniswapV2"
+    },
+    "chainId": "1",
+    "reserves0": "771573141809764576635",
+    "reserves1": "7633158083077765061",
+    "liquidity": 2627592.33443315,
+    "router": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    "createdAtTimestamp": "1725963503",
+    "creationTxHash": "0xfb06820f674a5a0cd821848393b3838fb8c5871554c19fa9e99cb4a4e8a07395"
+  },
+  "pairAddress": "0x76A411f14A704099Ba476CE8dFFC288a53295218"
+}
+
+
+
+{"HasProxyCalls":false,"Contracts":{"0xf280B16EF293D8e534e370794ef26bF312694126":true}}
+https://api.honeypot.is/v1/GetContractVerification?address=0xf280B16EF293D8e534e370794ef26bF312694126&pair=0x76a411f14a704099ba476ce8dffc288a53295218&chainID=1
+
+
+
+BASE 
+
+https://api.honeypot.is/v1/GetPairs?address=0xcdE172dc5ffC46D228838446c57C1227e0B82049&chainID=8453
+[
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V2: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0xa926342d7f9324a1dbde8f5ab77c92706f289b5d"
+    },
+    "Reserves": [2.765340616467051e+19, 1.229854477968955e+26],
+    "Liquidity": 94451.3148916787,
+    "Router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "CreatedAtTimestamp": 1711388927,
+    "CreationTxHash": "0x6a7229c8a264e2c8953fa2fc541c62472743830e964b00d3b56503e91193b722"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0x0c04155b948497dda17b81faa62609485b08a7a2"
+    },
+    "Reserves": [16009507858717732, 3.911864216735282e+22],
+    "Liquidity": 54.0186410365709,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1711822809,
+    "CreationTxHash": "0x921b685e9bb1f9bac7326483959e69824df08141479c103da9ba7effdf37e7de"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: USDC-BOOMER",
+      "Tokens": [
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0x75961e81550581aaec577d4777e3365a104c8e03"
+    },
+    "Reserves": [2696438, 6.600338202937994e+21],
+    "Liquidity": 5.392347498152,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1714091007,
+    "CreationTxHash": "0x116c5b7b6a58077dfa48b01c60654365a84dac59dff1e4dc6e455c7f569304de"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "SushiSwap V2: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0xec1c0ba6943e6180f7f294ed4004c11bacb7b663"
+    },
+    "Reserves": [579296653953, 2.970888778444434e+18],
+    "Liquidity": 0.00187218251233028,
+    "Router": "0x6bded42c6da8fbf0d2ba55b2fa120c5e0c8d7891",
+    "CreatedAtTimestamp": 1714630863,
+    "CreationTxHash": "0xae99a1f3aec14b92d9959b31936a7fc12bf4e2e578372ab5de504e61a29caf16"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "SushiSwap V3: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0xfac8a0b166f9ac3a6a8f6d057023d5e9322a0705"
+    },
+    "Reserves": [71509350229, 251186560156446370],
+    "Liquidity": 0.000329899806025676,
+    "Router": "0xfb7ef66a7e61224dd6fcd0d7d9c3be5c8b049b9f",
+    "CreatedAtTimestamp": 1727956875,
+    "CreationTxHash": "0x422bcd38995fe8fa6edb119959bba70937ff9afe8050e0dc5b2d8e80dd6e6ad7"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0xd8e2770c5ae8a8e5c4653140c776a93769ac24a1"
+    },
+    "Reserves": [12189577341, 86321011775753710],
+    "Liquidity": 0.000053316967318653,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1713937919,
+    "CreationTxHash": "0xf3b9557627c82777f908cf52632112124b2de2ff2c99718d282ed12c5821117f"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: USDC-BOOMER",
+      "Tokens": [
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0x60d194e9b4874a208cd13799426e3761ac687b37"
+    },
+    "Reserves": [1, 1],
+    "Liquidity": 0.000001998866,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1714091235,
+    "CreationTxHash": "0x896aa251ff696bf4c26b8514646ea50c7635feca40fd77be4a2cb7c94460d739"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: WETH-BOOMER",
+      "Tokens": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0x43b806686bbcc3baf1552a9fd7526b17d931e0d4"
+    },
+    "Reserves": [193242637, 9624484438562644],
+    "Liquidity": 9.03246831216e-7,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1713945949,
+    "CreationTxHash": "0x4436aa36e1fb78426e719921ff731aae435aa6b4ddf378d25ae5e8335103bef9"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: BENTO-BOOMER",
+      "Tokens": [
+        "0x9de16c805a3227b9b92e39a446f9d56cf59fe640",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0xd0d363064df138f7714f135a815bbf7577069953"
+    },
+    "Reserves": [10, 6],
+    "Liquidity": 0,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1714888547,
+    "CreationTxHash": "0x51b18bda579ef0b6f181cbf2b2e3708324ecb51561add1a2209da64ab5ad0c29"
+  },
+  {
+    "ChainID": 8453,
+    "Pair": {
+      "Name": "Uniswap V3: OOMER-BOOMER",
+      "Tokens": [
+        "0x41a5189f62e71c75824e6f7ff033e29b44cfe2d3",
+        "0xcde172dc5ffc46d228838446c57c1227e0b82049"
+      ],
+      "Address": "0x98081f1305a5a9f2f3e29f87431f6468ecc80ac1"
+    },
+    "Reserves": [1, 1],
+    "Liquidity": 0,
+    "Router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "CreatedAtTimestamp": 1717426713,
+    "CreationTxHash": "0x2c23ce2947472e079d6bc4a9fd2d50f458abc4f4ca1fdfeb0f0a048fe94c8403"
+  }
+]
+
+https://api.honeypot.is/v1/TokenInfo?address=0xcdE172dc5ffC46D228838446c57C1227e0B82049&chainID=8453
+{"Name":"Boomer","Symbol":"BOOMER","Decimals":18,"Address":"0xcde172dc5ffc46d228838446c57c1227e0b82049","TotalSupply":1000000000000000000000000000}
+
+https://api.honeypot.is/v1/TopHolders?address=0xcdE172dc5ffC46D228838446c57C1227e0B82049&chainID=8453
+{
+  "totalSupply": "1000000000000000000000000000",
+  "holders": [
+    {
+      "address": "0xa926342d7f9324A1DbDe8F5ab77c92706f289b5d",
+      "balance": "122985447796895483700486337",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x000000000000000000000000000000000000dEaD",
+      "balance": "73069816538621666296588758",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x1863834191a4ff9A326C9C993C13E0513a39CbC6",
+      "balance": "53523497617206632975412255",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xd1e0Fe73c78846aB14d644a8E5A7DA2f2e75A206",
+      "balance": "23548171137504675933469537",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xFd4411d58F25876f80E31e40bd8a291dEc3F7E67",
+      "balance": "23313001514700069743785419",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xC46346191f8fe043389144E934dE0C7Aab89c122",
+      "balance": "19001634000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x65cD7c05173ef8e8bfE936a17b697e51057d1CBB",
+      "balance": "18701338013690270172076081",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x5706dBEd07C355a31DcdeFcB0d912b62ED728Df1",
+      "balance": "18401554804595432306300158",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x30ED9195E632e4A8b74F55B60611fb4aA297770b",
+      "balance": "15180479362784967611770115",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x00Eb731CC3a0ae6CD991580BB4B2E5675B6Ea2e9",
+      "balance": "13014954202756223319808925",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xAb84b22F52204530Db2a66Ab3ae75107809489b6",
+      "balance": "12241274420103112890194076",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xB3Abc729AD14c053eB30D5aC98286319767E97a3",
+      "balance": "11408700848064567575949269",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x44bdbA794FE26ED60E2229451C73eB2097F82363",
+      "balance": "10617992467957417371872457",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x016663df9c01e02bA0Db2dACd14914C23AF99092",
+      "balance": "10381793354682845293460990",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xE8CC3ee6b691d80bef88539383a5C1b051bd6AE2",
+      "balance": "10338513204487513000038706",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xFD1f5b63FcF757527BaB0a7211404Cc20bcCcB0C",
+      "balance": "10017586523853823676396707",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9140735BAaC8c401898153DCD398b2BD307B1363",
+      "balance": "10001500000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x969405d8d515fb71ED14FdFd2e7af7F79861448e",
+      "balance": "9486199524593618041047908",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xB11975fC32c26577F6F569A8bdC1b3e0dBADA542",
+      "balance": "9002313642153009179949656",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7cA3EaF87ca4F8d2b72A5084DB66541ead88421C",
+      "balance": "8820567239254046149732204",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x0919642a7e1cc246df244C2F12F2C2ADb28FcC7C",
+      "balance": "7957737346677725439284304",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x187b179723C61F4c6fA9F7eD64F64e82138A2CF2",
+      "balance": "7479599122757176057000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x8E63c9E335eE77cbeDd73771b35A4A77fb950f16",
+      "balance": "6886752108423750220576848",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xdD36F43C65e7514D86dEcA8f4DA03D5276d7d4Ec",
+      "balance": "6521000317553674467294568",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xFb3570623CE9638bA44946B935971d47eC2d0ebB",
+      "balance": "6410768461948061570007186",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x521E1617f808f3380C52F95a4cF9F09d3168E30E",
+      "balance": "5861584000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x029412A072808406CD4928B319d99D38638f4d09",
+      "balance": "5833585029319478178107165",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x1a11796cE2412FF884159e753B667527B74fC1aB",
+      "balance": "5584464646485217337844623",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xeA3693e5E185d09Ef40962B4a176f6f6C1F8f660",
+      "balance": "5555555500017647163743993",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x4E573ccDf22B0EC102E8330A0a729cB58B263dcE",
+      "balance": "5414756537653923617985221",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x0ba270a48ba75480938Ee4d7d5f380eEE3a67b56",
+      "balance": "5031438208913672741679911",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x52e94579e45aB03F73e8D83712588539Eb2cd06c",
+      "balance": "5023405551336188791826498",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x481a0e4882Cd52343219aadD108de3f9Bd417Bee",
+      "balance": "4999056176308015315476792",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x8Bc3Bc764535049a640D859bfE7206680D574a8b",
+      "balance": "4996854240954163307843449",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x0B546a38D9Bf2651d611FC9c61252D225B61a3e3",
+      "balance": "4949117712341851868189832",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x9068cd609144dcb9AA1fCE59011e7d4D41768890",
+      "balance": "4412125049232145015701728",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xF1C25d0622c1216eCcCE0A4383D72dBB091b4be9",
+      "balance": "4236652682283784963489647",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x6540565B03c99a0E130835A0df7C226ddECC38E8",
+      "balance": "4133756542400900868893722",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xB764C290f75875B56AEDCcB15B043350Ab8f84C5",
+      "balance": "4109070875457077606556107",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7Ca8F08d33f14A5F972552aaa44a5Ac3A42A4929",
+      "balance": "4079124737894905062000099",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x07a5C501e39E252CfbB4e510FD20E8AF6419579b",
+      "balance": "3925608701780039827307391",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xfd437B9E805b303a15F51504280eac94757664cc",
+      "balance": "3565807120722607037846232",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x66e351E2113600cfd71386DB6a2DE18678608841",
+      "balance": "3534387897451147676785239",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xF2CaA1b2703ECBdc08BdDCDAAE12E219d9C0Cc26",
+      "balance": "3484420000000000000000000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x5bAd3939616097a46C0c36BE4d0c13D39c22ecD0",
+      "balance": "3369957643197932812133417",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x6F13e5B0699a6C241d2148E1c160b6A4b9c8B95B",
+      "balance": "3210426719795098644270837",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x7e744b70a3Bc965A5c127aD63a98aa2393466984",
+      "balance": "3202842447587068317378066",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xd6b7297130052681f10B87f989B163664DAB63Df",
+      "balance": "3087678427411111165633509",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xE55f1e43f8C951BE4F220F5D64d36ed0e438425E",
+      "balance": "3016690673990716191337260",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xb4159EA109ba24eF7e6b0a68c1a3B8B4aCdbe698",
+      "balance": "3005102793216754586008251",
+      "alias": "",
+      "isContract": false
+    }
+  ]
+}
+
+https://api.honeypot.is/v1/TopHolders?address=0xa926342d7f9324a1dbde8f5ab77c92706f289b5d&chainID=8453
+{
+  "totalSupply": "30000005747858843804004",
+  "holders": [
+    {
+      "address": "0x000000000000000000000000000000000000dEaD",
+      "balance": "29999999999999999999000",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xB188d970c3Df67E4f9282006030c2252F9a49f7a",
+      "balance": "4170316848719949",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x594174b00931d36733a43E97BE6D8BDCF699d5aD",
+      "balance": "751662604304939",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x3924105EB1Da270909De27F6f10bCa85B0cbf7f2",
+      "balance": "433183251438341",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xA1F3ecb9DeFc66E67833100cdd4B8483B3acD438",
+      "balance": "289684404235711",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x11d9AA530c285c7C05b07f3329Fb111d10Fb433E",
+      "balance": "64209380264802",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x2b00E5fe96D5c302f852e0076061f86078E0dC77",
+      "balance": "33256321945799",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0xE158bacFA78DF823d792c94f4Fc9a5535F69AF84",
+      "balance": "5546032894463",
+      "alias": "",
+      "isContract": false
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "balance": "1000",
+      "alias": "",
+      "isContract": false
+    }
+  ]
+}
+
+
+https://api.honeypot.is/v2/IsHoneypot?address=0xcdE172dc5ffC46D228838446c57C1227e0B82049&pair=0xa926342d7f9324a1dbde8f5ab77c92706f289b5d&chainID=8453
+
+{
+  "token": {
+    "name": "Boomer",
+    "symbol": "BOOMER",
+    "decimals": 18,
+    "address": "0xcdE172dc5ffC46D228838446c57C1227e0B82049",
+    "totalHolders": 2642256
+  },
+  "withToken": {
+    "name": "Wrapped Ether",
+    "symbol": "WETH",
+    "decimals": 18,
+    "address": "0x4200000000000000000000000000000000000006",
+    "totalHolders": 4983989
+  },
+  "summary": {
+    "risk": "low",
+    "riskLevel": 1,
+    "flags": []
+  },
+  "simulationSuccess": true,
+  "honeypotResult": {
+    "isHoneypot": false
+  },
+  "simulationResult": {
+    "buyTax": 0,
+    "sellTax": 0,
+    "transferTax": 0,
+    "buyGas": "156488",
+    "sellGas": "104123"
+  },
+  "holderAnalysis": {
+    "holders": "21718",
+    "successful": "21718",
+    "failed": "0",
+    "siphoned": "0",
+    "averageTax": 0,
+    "averageGas": 117034.860208122,
+    "highestTax": 0,
+    "highTaxWallets": "0",
+    "taxDistribution": [
+      {
+        "tax": 0,
+        "count": 21718
+      }
+    ],
+    "snipersFailed": 0,
+    "snipersSuccess": 0
+  },
+  "flags": [],
+  "contractCode": {
+    "openSource": true,
+    "rootOpenSource": true,
+    "isProxy": false,
+    "hasProxyCalls": false
+  },
+  "chain": {
+    "id": "8453",
+    "name": "Base",
+    "shortName": "base",
+    "currency": "ETH"
+  },
+  "router": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
+  "pair": {
+    "pair": {
+      "name": "Uniswap V2: WETH-BOOMER",
+      "address": "0xa926342d7f9324A1DbDe8F5ab77c92706f289b5d",
+      "token0": "0x4200000000000000000000000000000000000006",
+      "token1": "0xcdE172dc5ffC46D228838446c57C1227e0B82049",
+      "type": "UniswapV2"
+    },
+    "chainId": "8453",
+    "reserves0": "27653406164670510219",
+    "reserves1": "122985447796895483492086175",
+    "liquidity": 94383.8405806369,
+    "router": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
+    "createdAtTimestamp": "1711388927",
+    "creationTxHash": "0x6a7229c8a264e2c8953fa2fc541c62472743830e964b00d3b56503e91193b722"
+  },
+  "pairAddress": "0xa926342d7f9324A1DbDe8F5ab77c92706f289b5d"
+}
+
+
+https://api.honeypot.is/v1/GetContractVerification?address=0xcdE172dc5ffC46D228838446c57C1227e0B82049&pair=0xa926342d7f9324a1dbde8f5ab77c92706f289b5d&chainID=8453
+{"HasProxyCalls":false,"Contracts":{"0xcdE172dc5ffC46D228838446c57C1227e0B82049":true}}

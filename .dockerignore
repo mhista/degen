@@ -1,0 +1,22 @@
+# Ignore git and IDE configurations
+.git
+.gitignore
+.vscode
+.idea
+
+# Ignore local build directories and package caches
+.dart_tool/
+.packages
+build/
+
+# Ignore local secret files
+.env
+.env.local
+*.env
+
+# Ignore client-side/mobile packages from the server build context
+degenbot_flutter/
+degenbot_client/
+docs/
+*.md
+*.txt
