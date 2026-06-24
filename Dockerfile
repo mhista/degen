@@ -2,7 +2,7 @@
 # docker build -t degenbot .
 
 # Build stage
-FROM dart:3.8.0 AS build
+FROM dart:3.9.0 AS build
 
 # Create a minimal workspace that preserves locked server dependency versions.
 WORKDIR /app
@@ -11,7 +11,7 @@ COPY degenbot_server degenbot_server
 RUN printf '%s\n' \
   'name: _' \
   'environment:' \
-  '  sdk: ^3.8.0' \
+  '  sdk: ^3.9.0' \
   'workspace:' \
   '  - degenbot_server' \
   > pubspec.yaml
