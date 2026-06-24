@@ -24,6 +24,7 @@
 //   3. Register it in the endpoints list below
 //   4. Run: dart run serverpod generate  (regenerates client)
 
+import 'dart:io';
 import 'package:degenbot_server/src/generated/endpoints.dart';
 import 'package:degenbot_server/src/generated/protocol.dart';
 import 'package:serverpod/serverpod.dart';
@@ -76,8 +77,14 @@ void run(List<String> args) async {
 
     // 4. Initialize Serverpod and connect it with your generated code.
     Log.startupInfo('Configuring Serverpod instance...');
+    final portString = Platform.environment['PORT'] ?? Env.serverPort;
+    final List<String> modifiedArgs = List.from(args);
+    if (!modifiedArgs.contains('--port') && portString.isNotEmpty) {
+      modifiedArgs.addAll(['--port', portString]);
+    }
+
     final pod = Serverpod(
-      args,
+      modifiedArgs,
       Protocol(),
       Endpoints(),
     );
