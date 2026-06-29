@@ -1,35 +1,40 @@
 // token_intelligence_pipeline.dart
 //
-// THE BRAIN. This is the orchestrator that runs a token through all five
-// intelligence layers and produces the final TokenIntelligenceReport.
+// THE DATA GATHERER. This orchestrates the 5-layer intelligence pipeline
+// and hands everything to the TraderRuleEngine for the final verdict.
 //
-// PLAIN ENGLISH — HOW THIS WORKS:
-//   Think of this as a hiring panel for tokens. Each layer is one
-//   interviewer with a different specialty:
-//     • DexScreener        — "What do the numbers look like?"
-//     • GoPlus/RugCheck/Sniffer — "Is the contract itself dangerous?"
-//     • Ownership check    — "Can the deployer still mess with this?"
-//     • ChainGPT           — "Is anyone legitimately excited about this?"
-//     • On-chain forensics — "Are the buyers real people or bots?"
+// PLAIN ENGLISH — HOW THIS NOW WORKS:
+//   Think of this as an investigator assembling evidence. Each layer is
+//   a different evidence source:
+//     • Layer 1 DexScreener        — market vitals (price, MCap, volume)
+//     • Layer 2 GoPlus/RugCheck/Sniffer — is the contract itself dangerous?
+//     • Layer 3 Ownership check    — LP locked? deployer still holding?
+//     • Layer 4 ChainGPT           — organic social interest? KOL mentions?
+//     • Layer 5 On-chain forensics — real buyers or wash trading?
 //
-//   Layers 2 and 3 run FIRST and can produce an instant REJECT — if a
-//   token is a honeypot, there's no point spending API calls on sentiment
-//   analysis. This saves money and time (fail fast).
+//   Once all evidence is gathered, the TRADER'S RULE ENGINE reads it and
+//   makes the decision. The LLM (Claude/Gemini/GPT) is then asked to
+//   EXPLAIN that decision in plain English — not to make it.
 //
-//   If a token survives the hard gates, ALL remaining layers run in
-//   PARALLEL (not one after another) — this matters because DexScreener
-//   shows new tokens every few seconds, so the pipeline needs to be fast.
+// KEY CHANGE FROM THE OLD DESIGN:
+//   OLD: LLM gets all data → scores 0-100 → decides buy/watch/reject
+//   NEW: Rule engine decides → LLM explains WHY in the Telegram message
 //
-//   Finally, the AI scoring engine (dartantic_ai) receives the COMPLETE
-//   picture from all layers and writes the final score + reasoning.
+//   The old approach was a coin-analyzer bot. The new approach is a
+//   trading bot that applies the trader's actual, auditable rules.
 //
-// THIS IS WHERE THE "SMART" IN SMART BOT LIVES.
+// TOKEN CACHE:
+//   Every address that passes through here is stored in TokenCacheService.
+//   If it's already there, we return the cached result immediately —
+//   zero API calls, zero cost. The scanner loop relies on this heavily.
 
 import 'dart:convert';
 import 'package:dartantic_ai/dartantic_ai.dart';
 import 'package:degenbot_server/src/config/env.dart';
 import 'package:degenbot_server/src/services/dex/dexscreener_service.dart';
 import 'package:degenbot_server/src/services/repository/feature_flags_repository.dart';
+import 'package:degenbot_server/src/services/trading/trader_rule_engine.dart';
+import 'package:degenbot_server/src/services/trading/token_cache_service.dart';
 import 'token_intelligence_report.dart';
 import 'goplus_service.dart';
 import 'rugcheck_service.dart';
@@ -37,9 +42,8 @@ import 'tokensniffer_service.dart';
 import 'chaingpt_service.dart';
 import 'onchain_forensics_service.dart';
 import 'package:degenbot_server/degen_logger.dart';
-// ADD this import at the top of token_intelligence_pipeline.dart:
-import 'package:degenbot_server/src/bot/utils/chain_detector.dart'; // adjust path to match where you place it
-import 'honeypot_service.dart'; //  a separate service for honeypot checks
+import 'package:degenbot_server/src/bot/utils/chain_detector.dart';
+import 'honeypot_service.dart';
 
 /// Type alias for GoPlus's return tuple — keeps the nullable variable
 /// declaration above readable.
@@ -199,12 +203,39 @@ class TokenIntelligencePipeline {
     );
   }
 
+  final TraderRuleEngine _ruleEngine = TraderRuleEngine();
+  McapFilter _mcapFilter = McapFilter.defaultFilter;
+
+  /// Current MCap filter (readable by command handlers for display).
+  McapFilter get mcapFilter => _mcapFilter;
+
+  /// Update the MCap filter (called when user changes /mcap settings).
+  void setMcapFilter(McapFilter filter) {
+    _mcapFilter = filter;
+    Log.info(
+      '📐 [Pipeline] MCap filter updated: \$${filter.minUsd.toStringAsFixed(0)}–\$${filter.maxUsd.toStringAsFixed(0)}',
+    );
+  }
+
   /// Run the full pipeline on a single token candidate.
   /// This is the ONLY method the scanner loop needs to call.
   Future<TokenIntelligenceReport> analyze({
     required String contractAddress,
     required String chain,
   }) async {
+    // ── CACHE CHECK — skip if we've already analyzed this address ─────────
+    // This is the first thing we do. If it's cached, we return immediately
+    // with zero API calls — the scanner loop sees hundreds of tokens and
+    // we never want to re-analyze one we've already processed.
+    final cached = TokenCacheService.instance.get(contractAddress);
+    if (cached != null) {
+      Log.info(
+        '💾 [Pipeline] Cache hit for $contractAddress (${cached.tokenSymbol}) '
+        '— verdict: ${cached.verdictLabel}. Skipping re-analysis.',
+      );
+      return _cachedReport(cached);
+    }
+
     Log.info(
       '🔍 Starting full pipeline analysis for token: $contractAddress on chain: $chain',
     );
@@ -495,44 +526,86 @@ class TokenIntelligencePipeline {
 
     final ownership = rugCheckOwnership ?? _defaultOwnership();
 
-    // ── STEP 6: Hand everything to the AI for final scoring ───────────────
-    final aiVerdict = (enabled[FeatureFlag.aiScoring] ?? true)
-        ? await (() async {
-            Log.info(
-              '🧠 Sending complete token dossier to AI scoring engine...',
-            );
-            return _runAiScoring(
-              tokenName: tokenName,
-              tokenSymbol: tokenSymbol,
-              chain: chain,
-              market: market,
-              safety: safety,
-              ownership: ownership,
-              sentiment: sentimentResult?.data,
-              onChain: onChainResult.data,
-              flags: allFlags,
-            );
-          })()
-        : (
-            verdict: TokenVerdict.watch,
-            score: 0,
-            reasoning:
-                'AI scoring is disabled via feature flags — data '
-                'gathered but no verdict produced. Enable ai_scoring to get a decision.',
-          );
+    // ── STEP 6: Apply the trader's rules — THE DECISION ──────────────────
+    // The rule engine reads the assembled report data and applies the
+    // trader's exact, hardcoded rules to produce a verdict.
+    // The LLM has NO role in this decision — it only explains it afterward.
+    Log.info('📐 Applying trader rule engine...');
+
+    // Build a partial report for the rule engine to evaluate.
+    final partialReport = TokenIntelligenceReport(
+      chain: chain,
+      contractAddress: contractAddress,
+      tokenName: tokenName,
+      tokenSymbol: tokenSymbol,
+      analysisTimestamp: DateTime.now().toUtc(),
+      verdict: TokenVerdict.watch, // placeholder — rule engine sets the real one
+      aiScore: 0,
+      aiReasoning: '',
+      flags: allFlags,
+      market: market,
+      safety: safety,
+      ownership: ownership,
+      sentiment: sentimentResult?.data,
+      onChain: onChainResult.data,
+      honeypot: honeypotData,
+    );
+
+    final ruleDecision = _ruleEngine.evaluate(
+      partialReport,
+      mcapFilter: _mcapFilter,
+    );
+
+    // Map rule engine verdict to the report's TokenVerdict enum.
+    final finalVerdict = switch (ruleDecision.verdict) {
+      TradeRuleVerdict.buyCandidate => TokenVerdict.buy,
+      TradeRuleVerdict.watchOnly => TokenVerdict.watch,
+      TradeRuleVerdict.rejected => TokenVerdict.reject,
+      TradeRuleVerdict.abandoned => TokenVerdict.reject,
+    };
+
+    // ── STEP 7: LLM explains the decision (optional, can be disabled) ─────
+    // This is purely for readability in the Telegram message. It takes the
+    // rule engine's verdict + reason and writes it in plain English.
+    // If the LLM call fails or is disabled, the rule engine's reason string
+    // is used directly — the verdict is NEVER changed by this step.
+    String explanation = ruleDecision.reason;
+
+    if (enabled[FeatureFlag.aiScoring] ?? true) {
+      Log.info('🤖 Asking LLM to explain the rule engine\'s decision...');
+      explanation = await _explainRuleDecision(
+        tokenName: tokenName,
+        tokenSymbol: tokenSymbol,
+        ruleDecision: ruleDecision,
+        market: market,
+        fallback: ruleDecision.reason,
+      );
+    }
+
+    // ── Cache the result so we never re-analyze this address ──────────────
+    TokenCacheService.instance.record(
+      contractAddress: contractAddress,
+      chain: chain,
+      tokenSymbol: tokenSymbol,
+      verdictLabel: ruleDecision.verdict.name,
+      reason: ruleDecision.reason,
+    );
 
     Log.success(
-      '🏆 Analysis complete for $tokenSymbol! Verdict: ${aiVerdict.verdict.name.toUpperCase()} | Score: ${aiVerdict.score}',
+      '🏆 Analysis complete for $tokenSymbol! '
+      'Rule verdict: ${ruleDecision.verdict.name.toUpperCase()} | '
+      '${ruleDecision.failedGate != null ? "Failed gate ${ruleDecision.failedGate}" : "All gates passed"}',
     );
+
     return TokenIntelligenceReport(
       chain: chain,
       contractAddress: contractAddress,
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       analysisTimestamp: DateTime.now().toUtc(),
-      verdict: aiVerdict.verdict,
-      aiScore: aiVerdict.score,
-      aiReasoning: aiVerdict.reasoning,
+      verdict: finalVerdict,
+      aiScore: 0, // No longer using a 0-100 score — rule engine is binary
+      aiReasoning: explanation,
       flags: allFlags,
       market: market,
       safety: safety,
@@ -543,12 +616,86 @@ class TokenIntelligencePipeline {
     );
   }
 
-  // ── AI SCORING (dartantic_ai) ─────────────────────────────────────────────
-  /// Lightweight, cheap AI call that ONLY explains an already-decided
-  /// rejection in plain English. It cannot change the verdict — the
-  /// reject has already happened by the time this runs. If this call
-  /// fails for any reason, the caller falls back to the mechanical
-  /// flag-summary string — the user always gets SOME explanation.
+  // ── AI EXPLANATION LAYER (dartantic_ai) ──────────────────────────────────
+  //
+  // The LLM's ONLY job: translate the rule engine's decision into
+  // plain English for the Telegram message. It has NO vote on the outcome.
+  //
+  // This replaces the old _runAiScoring — which let the LLM decide.
+  // The new design: rules decide, LLM explains.
+
+  /// Ask the LLM to explain the rule engine's verdict in plain English.
+  /// Falls back to [fallback] if the LLM call fails or is slow.
+  Future<String> _explainRuleDecision({
+    required String tokenName,
+    required String tokenSymbol,
+    required TradeRuleDecision ruleDecision,
+    required MarketData? market,
+    required String fallback,
+  }) async {
+    try {
+      Provider provider = switch (Env.aiProvider) {
+        'openai' => OpenAIProvider(apiKey: Env.openaiApiKey),
+        'google' || 'gemini' => GoogleProvider(apiKey: Env.geminiApiKey),
+        _ => AnthropicProvider(apiKey: Env.anthropicApiKey),
+      };
+
+      final agent = Agent.forProvider(provider);
+
+      final verdictLabel = switch (ruleDecision.verdict) {
+        TradeRuleVerdict.buyCandidate => 'APPROVED AS BUY CANDIDATE',
+        TradeRuleVerdict.watchOnly => 'ADDED TO WATCHLIST (not buying yet)',
+        TradeRuleVerdict.rejected => 'REJECTED',
+        TradeRuleVerdict.abandoned => 'ABANDONED (critical risk)',
+      };
+
+      final mcapStr = market?.marketCapUsd != null
+          ? 'Market cap: \$${market!.marketCapUsd!.toStringAsFixed(0)}'
+          : '';
+      final tolerableStr = ruleDecision.tolerableFlags.isNotEmpty
+          ? 'Note: these minor flags were present but are considered tolerable: '
+              '${ruleDecision.tolerableFlags.join(", ")}.'
+          : '';
+
+      final prompt =
+          '''
+A crypto trading bot has evaluated $tokenName ($tokenSymbol) using the trader's
+exact rules and reached this verdict: $verdictLabel.
+
+Rule engine reason: ${ruleDecision.reason}
+$mcapStr
+$tolerableStr
+
+Your job: Explain this verdict in 2-3 sentences of plain English that a
+non-technical crypto trader would understand in a Telegram message.
+
+If APPROVED: briefly explain why it passed (what looked good, what minor flags
+exist). Be encouraging but honest.
+
+If REJECTED or ABANDONED: explain clearly why — what the specific risk is, what
+could go wrong if someone bought this. Don't soften it.
+
+If WATCHLIST: explain it's safe but MCap is outside the target range, and what
+to wait for.
+
+Do NOT repeat the token name/symbol (it's shown in the header).
+Do NOT use markdown headers.
+Respond with ONLY the plain-English explanation, 2-3 sentences max.
+''';
+
+      final result = await agent.send(prompt).timeout(const Duration(seconds: 8));
+      final text = result.output?.trim();
+      if (text == null || text.isEmpty) return fallback;
+      return text;
+    } catch (e) {
+      Log.warning('LLM explanation failed — using rule engine reason: $e');
+      return fallback;
+    }
+  }
+
+  /// Legacy: Lightweight, cheap AI call that ONLY explains an already-decided
+  /// rejection in plain English. Kept for backward compatibility with the
+  /// hard-gate rejection path.
   Future<String> _explainRejection({
     required String tokenName,
     required String tokenSymbol,
@@ -608,168 +755,37 @@ Respond with ONLY the plain-English explanation, no preamble, no JSON.
     }
   }
 
-  Future<({TokenVerdict verdict, int score, String reasoning})> _runAiScoring({
-    required String tokenName,
-    required String tokenSymbol,
-    required String chain,
-    required MarketData market,
-    required SafetyData safety,
-    required OwnershipData ownership,
-    SentimentData? sentiment,
-    required OnChainData onChain,
-    required List<IntelligenceFlag> flags,
-  }) async {
-    Provider provider = switch (Env.aiProvider) {
-      'openai' => OpenAIProvider(apiKey: Env.openaiApiKey),
-      'google' || 'gemini' => GoogleProvider(apiKey: Env.geminiApiKey),
-      _ => AnthropicProvider(apiKey: Env.anthropicApiKey),
+  // ── CACHE REPORT HELPER ───────────────────────────────────────────────────
+
+  /// Build a minimal TokenIntelligenceReport from a cache hit.
+  /// We don't have all the layer data anymore — just what we stored.
+  TokenIntelligenceReport _cachedReport(CachedTokenResult cached) {
+    final verdict = switch (cached.verdictLabel) {
+      'buyCandidate' => TokenVerdict.buy,
+      'watchOnly' => TokenVerdict.watch,
+      'rejected' || 'abandoned' => TokenVerdict.reject,
+      _ => TokenVerdict.watch,
     };
 
-    final systemPrompt = '''
-You are a crypto token risk and opportunity scorer for a degen trading bot.
-You will receive a complete dossier on a token: market data, safety scan
-results, ownership/liquidity data, social sentiment, and on-chain forensics.
-
-Score the token 0-100 where:
-  0-29  = REJECT (too risky or no real opportunity)
-  30-59 = WATCH (passes safety but not strong enough to buy yet)
-  60-100 = BUY (passes safety AND shows genuine opportunity signals)
-
-Weight your scoring as:
-  - Safety/contract risk: 40% (already pre-filtered for critical issues,
-    but weigh remaining medium/high flags here)
-  - Liquidity & ownership structure: 20%
-  - Market momentum (volume, buy/sell ratio, price action): 20%
-  - Social sentiment & narrative fit: 10%
-  - On-chain buyer authenticity: 10%
-
-Respond with ONLY valid JSON in this exact shape, no other text:
-{"score": <int 0-100>, "verdict": "<buy|watch|reject>", "reasoning": "<2-3 sentence plain English explanation a non-technical person would understand>"}
-''';
-
-    final agent = Agent.forProvider(
-      provider,
+    return TokenIntelligenceReport(
+      chain: cached.chain,
+      contractAddress: cached.contractAddress,
+      tokenName: cached.tokenSymbol, // we only cached the symbol
+      tokenSymbol: cached.tokenSymbol,
+      analysisTimestamp: cached.analyzedAt,
+      verdict: verdict,
+      aiScore: 0,
+      aiReasoning:
+          '(Cached result from ${_timeAgo(cached.analyzedAt)}) ${cached.reason}',
+      flags: const [],
     );
-
-    final prompt = _buildScoringPrompt(
-      tokenName: tokenName,
-      tokenSymbol: tokenSymbol,
-      chain: chain,
-      market: market,
-      safety: safety,
-      ownership: ownership,
-      sentiment: sentiment,
-      onChain: onChain,
-      flags: flags,
-    );
-
-    try {
-      final result = await agent.send(
-        prompt,
-        history: [
-          ChatMessage.system(systemPrompt),
-        ],
-      );
-      return _parseAiResponse(result.output ?? '');
-    } catch (e, st) {
-      Log.error('❌ AI scoring agent request failed', error: e, stackTrace: st);
-      // Conservative fallback: if AI fails, don't buy blind
-      return (
-        verdict: TokenVerdict.watch,
-        score: 40,
-        reasoning:
-            'AI scoring unavailable — defaulting to watch-only. '
-            'Manual review recommended.',
-      );
-    }
   }
 
-  String _buildScoringPrompt({
-    required String tokenName,
-    required String tokenSymbol,
-    required String chain,
-    required MarketData market,
-    required SafetyData safety,
-    required OwnershipData ownership,
-    SentimentData? sentiment,
-    required OnChainData onChain,
-    required List<IntelligenceFlag> flags,
-  }) {
-    final flagSummary = flags.isEmpty
-        ? 'No flags raised.'
-        : flags.map((f) => '- $f').join('\n');
-
-    return '''
-TOKEN: $tokenName ($tokenSymbol) on $chain
-
-MARKET DATA:
-- Price: \$${market.priceUsd}
-- Liquidity: \$${market.liquidityUsd.toStringAsFixed(0)}
-- 24h Volume: \$${market.volumeUsd24h.toStringAsFixed(0)}
-- Market Cap: ${market.marketCapUsd != null ? '\$${market.marketCapUsd!.toStringAsFixed(0)}' : 'unknown'}
-- Token Age: ${market.tokenAgeHours.toStringAsFixed(1)} hours
-- Price change 1h/6h/24h: ${market.priceChange1h ?? '?'}% / ${market.priceChange6h ?? '?'}% / ${market.priceChange24h ?? '?'}%
-- Buy/Sell ratio: ${market.buySellRatio.toStringAsFixed(2)}
-
-SAFETY (already passed hard gate — no critical issues):
-- Buy/Sell tax: ${safety.buyTaxPercent}% / ${safety.sellTaxPercent}%
-- Contract verified: ${safety.isContractVerified}
-- TokenSniffer score: ${safety.tokenSnifferScore ?? 'N/A'}
-- RugCheck score: ${safety.rugCheckScore ?? 'N/A'}
-
-OWNERSHIP & LIQUIDITY:
-- Liquidity locked: ${ownership.isLiquidityLocked} ${ownership.liquidityLockPlatform != null ? '(${ownership.liquidityLockPlatform})' : ''}
-- Ownership renounced: ${ownership.isOwnershipRenounced}
-- Top 10 holders: ${ownership.top10HoldersPercent.toStringAsFixed(1)}%
-- Deployer holding: ${ownership.deployerHoldingPercent.toStringAsFixed(1)}%
-
-SENTIMENT: ${sentiment != null ? '''
-- Mindshare score: ${sentiment.mindshareScore ?? 'N/A'}
-- Sentiment: ${sentiment.sentimentLabel} (${sentiment.sentimentScore})
-- KOL mentions (24h): ${sentiment.kolMentionCount}
-- Organic growth: ${sentiment.isOrganicGrowth}
-- Narrative: ${sentiment.narrativeMatch ?? 'none identified'}
-''' : 'No sentiment data available (likely too new for social tracking)'}
-
-ON-CHAIN FORENSICS:
-- Unique buyers: ${onChain.uniqueBuyersCount ?? 'unknown'}
-- Wash trading detected: ${onChain.isWashTrading}
-- Wallet clusters: ${onChain.walletClusterCount}
-
-ALL FLAGS RAISED:
-$flagSummary
-
-Provide your score, verdict, and reasoning as JSON.
-''';
-  }
-
-  ({TokenVerdict verdict, int score, String reasoning}) _parseAiResponse(
-    String raw,
-  ) {
-    try {
-      // Strip markdown code fences if the model added them despite instructions
-      final cleaned = raw.replaceAll(RegExp(r'```json|```'), '').trim();
-      final json = jsonDecode(cleaned) as Map<String, dynamic>;
-
-      final score = (json['score'] as num).toInt().clamp(0, 100);
-      final verdictStr = (json['verdict'] as String).toLowerCase();
-      final reasoning = json['reasoning'] as String;
-
-      final verdict = switch (verdictStr) {
-        'buy' => TokenVerdict.buy,
-        'reject' => TokenVerdict.reject,
-        _ => TokenVerdict.watch,
-      };
-
-      return (verdict: verdict, score: score, reasoning: reasoning);
-    } catch (e) {
-      Log.warning('Failed to parse AI response: $raw', data: e);
-      return (
-        verdict: TokenVerdict.watch,
-        score: 40,
-        reasoning: 'Could not parse AI scoring response — defaulting to watch.',
-      );
-    }
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().toUtc().difference(dt.toUtc());
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   // ── HELPERS ───────────────────────────────────────────────────────────────

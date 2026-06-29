@@ -104,6 +104,35 @@ class UserRepository {
     return _dto.fromRow(response);
   }
 
+  /// Get all users who have the bot active (is_bot_active = true).
+  /// Optionally filter by activeChain — used by the scanner to find who
+  /// to notify when a buy signal fires on a specific chain.
+  Future<List<User>> getActiveBotUsers({String? chain}) async {
+    _log.fine('getActiveBotUsers(chain=$chain)');
+
+    var query = supabase
+        .from('users')
+        .select()
+        .eq('is_bot_active', true);
+
+    if (chain != null) {
+      query = query.eq('active_chain', chain);
+    }
+
+    final response = await query;
+    return (response as List)
+        .map((row) => _dto.fromRow(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get all distinct chains that have at least one active user.
+  /// Used by the scanner to decide which chains to poll.
+  Future<Set<String>> getActiveBotChains() async {
+    _log.fine('getActiveBotChains()');
+    final users = await getActiveBotUsers();
+    return users.map((u) => u.activeChain).toSet();
+  }
+
   /// Toggle the bot on or off for a user.
   Future<User> setBotActive(int userId, {required bool active}) async {
     _log.info('setBotActive userId=$userId active=$active');

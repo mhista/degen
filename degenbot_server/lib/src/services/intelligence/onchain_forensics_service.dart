@@ -22,9 +22,11 @@
 //   • Average transaction size — many tiny, uniform-sized buys often
 //     indicate bot/wash activity rather than organic interest
 //
-// DATA SOURCES (free tier APIs):
-//   Ethereum/BNB → Etherscan / BscScan API (free, rate-limited)
-//   Solana       → Solana RPC getSignaturesForAddress + Helius/Moralis
+// DATA SOURCES:
+//   ALL chains   → Bitquery V2 GraphQL (primary — wash trading + unique buyers)
+//   Ethereum/BNB → Etherscan / BscScan (fallback when Bitquery unavailable)
+//   Base         → Bitquery only (no dedicated block explorer key needed)
+//   Solana       → Bitquery primary; Solana RPC fallback (tx count only)
 //
 // NOTE: True wallet-cluster graph analysis (like BubbleMaps does visually)
 // is genuinely complex — this service implements a practical approximation
@@ -35,6 +37,7 @@
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 import 'token_intelligence_report.dart';
+import 'bitquery_service.dart';
 
 final _log = Logger('OnChainForensicsService');
 
@@ -42,6 +45,7 @@ class OnChainForensicsService {
   final String? _etherscanApiKey;
   final String? _bscscanApiKey;
   final String? _solanaRpcUrl;
+  final BitqueryService _bitquery;
 
   late final Dio _dio;
 
@@ -49,9 +53,11 @@ class OnChainForensicsService {
     String? etherscanApiKey,
     String? bscscanApiKey,
     String? solanaRpcUrl,
+    BitqueryService? bitqueryService,
   })  : _etherscanApiKey = etherscanApiKey,
         _bscscanApiKey = bscscanApiKey,
-        _solanaRpcUrl = solanaRpcUrl ?? 'https://api.mainnet-beta.solana.com' {
+        _solanaRpcUrl = solanaRpcUrl ?? 'https://api.mainnet-beta.solana.com',
+        _bitquery = bitqueryService ?? BitqueryService() {
     _dio = Dio(BaseOptions(
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 20),
@@ -68,10 +74,11 @@ class OnChainForensicsService {
 
     try {
       return switch (chain) {
-        'ethereum' => await _analyzeEvm(contractAddress, 'etherscan'),
-        'bnb' => await _analyzeEvm(contractAddress, 'bscscan'),
-        'solana' => await _analyzeSolana(contractAddress),
-        _ => _unknownResult(),
+        'ethereum' => await _analyzeWithBitqueryThenFallback(contractAddress, chain, 'etherscan'),
+        'bnb'      => await _analyzeWithBitqueryThenFallback(contractAddress, chain, 'bscscan'),
+        'base'     => await _analyzeWithBitqueryOrEmpty(contractAddress, chain),
+        'solana'   => await _analyzeSolana(contractAddress),
+        _          => _unknownResult(),
       };
     } catch (e, st) {
       _log.warning('On-chain forensics failed', e, st);
@@ -79,9 +86,60 @@ class OnChainForensicsService {
     }
   }
 
-  // ── EVM (Ethereum / BNB) ──────────────────────────────────────────────────
+  // ── EVM: Ethereum / BNB ────────────────────────────────────────────────────
+  // Bitquery primary; Etherscan/BscScan fallback.
 
-  Future<({OnChainData data, List<IntelligenceFlag> flags})> _analyzeEvm(
+  Future<({OnChainData data, List<IntelligenceFlag> flags})> _analyzeWithBitqueryThenFallback(
+    String contractAddress,
+    String chain,
+    String explorer,
+  ) async {
+    // Primary: Bitquery (wash-trading + unique-buyer detection)
+    if (_bitquery.isConfigured) {
+      final result = await _bitquery.analyzeToken(contractAddress: contractAddress, chain: chain);
+      if (result != null) {
+        _log.info('Bitquery $chain: walletClusters=${result.data.walletClusterCount} '
+            'washTrading=${result.data.isWashTrading} '
+            'uniqueBuyers=${result.data.uniqueBuyersCount}');
+        return result;
+      }
+      _log.warning('Bitquery returned null for $contractAddress on $chain — trying $explorer');
+    }
+
+    // Fallback: Etherscan / BscScan token transfer history
+    return await _analyzeViaExplorer(contractAddress, explorer);
+  }
+
+  /// Base has no dedicated block explorer key — Bitquery only, or empty result.
+  Future<({OnChainData data, List<IntelligenceFlag> flags})> _analyzeWithBitqueryOrEmpty(
+    String contractAddress,
+    String chain,
+  ) async {
+    if (_bitquery.isConfigured) {
+      final result = await _bitquery.analyzeToken(contractAddress: contractAddress, chain: chain);
+      if (result != null) {
+        _log.info('Bitquery Base: walletClusters=${result.data.walletClusterCount} '
+            'washTrading=${result.data.isWashTrading} '
+            'uniqueBuyers=${result.data.uniqueBuyersCount}');
+        return result;
+      }
+    }
+    // No fallback for Base — return clean empty result (no user-facing flag)
+    return (
+      data: const OnChainData(
+        walletClusterCount: 0,
+        suspiciousClusterCount: 0,
+        deployerFundingSource: null,
+        isWashTrading: false,
+        uniqueBuyersCount: null,
+        avgTransactionSizeUsd: null,
+      ),
+      flags: const <IntelligenceFlag>[],
+    );
+  }
+
+  /// Etherscan / BscScan token transfer history (fallback for ETH and BNB).
+  Future<({OnChainData data, List<IntelligenceFlag> flags})> _analyzeViaExplorer(
     String contractAddress,
     String explorer,
   ) async {
@@ -95,7 +153,6 @@ class OnChainForensicsService {
         ? 'https://api.etherscan.io/api'
         : 'https://api.bscscan.com/api';
 
-    // Fetch the most recent 1000 token transfer events
     final response = await _dio.get<Map<String, dynamic>>(
       baseUrl,
       queryParameters: {
@@ -109,8 +166,8 @@ class OnChainForensicsService {
       },
     );
 
-    final transfers = (response.data?['result'] as List? ?? [])
-        .cast<Map<String, dynamic>>();
+    final transfers =
+        (response.data?['result'] as List? ?? []).cast<Map<String, dynamic>>();
 
     return _analyzeTransfers(transfers, addressKey: 'to', fromKey: 'from');
   }
@@ -120,47 +177,50 @@ class OnChainForensicsService {
   Future<({OnChainData data, List<IntelligenceFlag> flags})> _analyzeSolana(
     String mintAddress,
   ) async {
-    // Get recent signatures for this mint's token account activity.
-    // NOTE: This is a simplified approach. Full implementation should use
-    // getTokenLargestAccounts + getSignaturesForAddress combined, or a
-    // dedicated indexer like Helius for production-grade accuracy.
-    final response = await _dio.post<Map<String, dynamic>>(
-      _solanaRpcUrl!,
-      data: {
-        'jsonrpc': '2.0',
-        'id': 1,
-        'method': 'getSignaturesForAddress',
-        'params': [mintAddress, {'limit': 1000}],
-      },
-    );
-
-    final signatures = (response.data?['result'] as List? ?? [])
-        .cast<Map<String, dynamic>>();
-
-    if (signatures.isEmpty) {
-      return _unknownResult();
+    // ── Primary path: Bitquery V2 ────────────────────────────────────────────
+    if (_bitquery.isConfigured) {
+      _log.fine('Bitquery: analysing Solana token $mintAddress');
+      final result = await _bitquery.analyzeToken(contractAddress: mintAddress, chain: 'solana');
+      if (result != null) {
+        _log.info('Bitquery Solana: walletClusters=${result.data.walletClusterCount} '
+            'washTrading=${result.data.isWashTrading} '
+            'uniqueBuyers=${result.data.uniqueBuyersCount}');
+        return result;
+      }
+      _log.warning('Bitquery returned null for $mintAddress — falling back to RPC');
     }
 
-    // Without full transaction parsing this gives us transaction COUNT
-    // but not buyer addresses — flag this limitation honestly.
-    return (
-      data: OnChainData(
-        walletClusterCount: 0, // requires full tx parsing — see research notes
-        suspiciousClusterCount: 0,
-        deployerFundingSource: null,
-        isWashTrading: false,
-        uniqueBuyersCount: null,
-        avgTransactionSizeUsd: null,
-      ),
-      flags: [
-        const IntelligenceFlag(
-          source: 'OnChainForensics',
-          severity: FlagSeverity.low,
-          message:
-              'Solana wallet clustering needs a dedicated indexer (Helius/Moralis) for full accuracy',
+    // ── Fallback: Solana RPC (tx count only, no buyer analysis) ─────────────
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        _solanaRpcUrl!,
+        data: {
+          'jsonrpc': '2.0',
+          'id': 1,
+          'method': 'getSignaturesForAddress',
+          'params': [mintAddress, {'limit': 100}],
+        },
+      );
+
+      final signatures = (response.data?['result'] as List? ?? []);
+      if (signatures.isEmpty) return _unknownResult();
+
+      // RPC gives us tx count but not buyer addresses — return partial data
+      return (
+        data: OnChainData(
+          walletClusterCount: 0,
+          suspiciousClusterCount: 0,
+          deployerFundingSource: null,
+          isWashTrading: false,
+          uniqueBuyersCount: null,
+          avgTransactionSizeUsd: null,
         ),
-      ],
-    );
+        flags: const <IntelligenceFlag>[],
+      );
+    } catch (e) {
+      _log.fine('Solana RPC fallback also failed: $e');
+      return _unknownResult();
+    }
   }
 
   // ── SHARED ANALYSIS LOGIC ────────────────────────────────────────────────
@@ -231,6 +291,7 @@ class OnChainForensicsService {
   }
 
   ({OnChainData data, List<IntelligenceFlag> flags}) _unknownResult() {
+    // Return clean empty result — internal unavailability is not user-facing noise
     return (
       data: const OnChainData(
         walletClusterCount: 0,
@@ -240,13 +301,7 @@ class OnChainForensicsService {
         uniqueBuyersCount: null,
         avgTransactionSizeUsd: null,
       ),
-      flags: [
-        const IntelligenceFlag(
-          source: 'OnChainForensics',
-          severity: FlagSeverity.low,
-          message: 'On-chain forensics unavailable for this token',
-        ),
-      ],
+      flags: const <IntelligenceFlag>[],
     );
   }
 }

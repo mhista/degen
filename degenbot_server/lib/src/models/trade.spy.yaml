@@ -5,6 +5,12 @@
 ## The risk manager reads this table to enforce daily trade limits and
 ## calculate ROI. The user's Telegram dashboard reads it to show history.
 ##
+## TRADER'S STRATEGY — sell rules encoded here:
+##   - Track the All-Time Low (ATL) from the moment we buy.
+##   - First sell when price reaches +800% from ATL (9x ATL).
+##   - After first sell: watch for -80% from first-sell price → rebuy.
+##   - This is NOT a fixed TP/SL — it moves with the actual price bottom.
+##
 
 class: Trade
 # table: trades
@@ -48,11 +54,25 @@ fields:
   # When the sell executed (null if trade still open)
   soldAt: DateTime?
 
-  # ── Risk management ──────────────────────────────────────────────────────────
-  # Target take-profit price (set by AI at buy time)
-  takeProfitPriceUsd: double?
+  # ── Trader's ATL-based sell strategy ─────────────────────────────────────────
+  #
+  # All-time low price since this position was opened.
+  # Starts at buyPriceUsd and only ever moves DOWN as price falls.
+  # The first sell target is always: allTimeLowPriceUsd * 9 (= +800% from ATL).
+  allTimeLowPriceUsd: double?
 
-  # Stop-loss price (set by risk manager at buy time)
+  # Whether the first sell (at +800% from ATL) has been executed.
+  firstSellExecuted: bool?
+
+  # The price at which the first sell was executed.
+  # After this, we watch for price to drop 80% for the rebuy.
+  firstSellPriceUsd: double?
+
+  # Legacy fields — kept for backward compatibility but no longer the
+  # primary strategy. takeProfitPriceUsd is now computed dynamically
+  # from ATL × 9. stopLossPriceUsd remains as a backstop for catastrophic
+  # drops only (e.g. -80% from entry, regardless of ATL).
+  takeProfitPriceUsd: double?
   stopLossPriceUsd: double?
 
   # ── Outcome ──────────────────────────────────────────────────────────────────

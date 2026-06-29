@@ -29,6 +29,9 @@ abstract class Trade
     this.sellPriceUsd,
     this.sellTxHash,
     this.soldAt,
+    this.allTimeLowPriceUsd,
+    this.firstSellExecuted,
+    this.firstSellPriceUsd,
     this.takeProfitPriceUsd,
     this.stopLossPriceUsd,
     this.realizedPnlUsd,
@@ -54,6 +57,9 @@ abstract class Trade
     double? sellPriceUsd,
     String? sellTxHash,
     DateTime? soldAt,
+    double? allTimeLowPriceUsd,
+    bool? firstSellExecuted,
+    double? firstSellPriceUsd,
     double? takeProfitPriceUsd,
     double? stopLossPriceUsd,
     double? realizedPnlUsd,
@@ -85,6 +91,15 @@ abstract class Trade
       soldAt: jsonSerialization['soldAt'] == null
           ? null
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['soldAt']),
+      allTimeLowPriceUsd: (jsonSerialization['allTimeLowPriceUsd'] as num?)
+          ?.toDouble(),
+      firstSellExecuted: jsonSerialization['firstSellExecuted'] == null
+          ? null
+          : _i1.BoolJsonExtension.fromJson(
+              jsonSerialization['firstSellExecuted'],
+            ),
+      firstSellPriceUsd: (jsonSerialization['firstSellPriceUsd'] as num?)
+          ?.toDouble(),
       takeProfitPriceUsd: (jsonSerialization['takeProfitPriceUsd'] as num?)
           ?.toDouble(),
       stopLossPriceUsd: (jsonSerialization['stopLossPriceUsd'] as num?)
@@ -130,6 +145,12 @@ abstract class Trade
 
   DateTime? soldAt;
 
+  double? allTimeLowPriceUsd;
+
+  bool? firstSellExecuted;
+
+  double? firstSellPriceUsd;
+
   double? takeProfitPriceUsd;
 
   double? stopLossPriceUsd;
@@ -164,6 +185,9 @@ abstract class Trade
     double? sellPriceUsd,
     String? sellTxHash,
     DateTime? soldAt,
+    double? allTimeLowPriceUsd,
+    bool? firstSellExecuted,
+    double? firstSellPriceUsd,
     double? takeProfitPriceUsd,
     double? stopLossPriceUsd,
     double? realizedPnlUsd,
@@ -191,6 +215,9 @@ abstract class Trade
       if (sellPriceUsd != null) 'sellPriceUsd': sellPriceUsd,
       if (sellTxHash != null) 'sellTxHash': sellTxHash,
       if (soldAt != null) 'soldAt': soldAt?.toJson(),
+      if (allTimeLowPriceUsd != null) 'allTimeLowPriceUsd': allTimeLowPriceUsd,
+      if (firstSellExecuted != null) 'firstSellExecuted': firstSellExecuted,
+      if (firstSellPriceUsd != null) 'firstSellPriceUsd': firstSellPriceUsd,
       if (takeProfitPriceUsd != null) 'takeProfitPriceUsd': takeProfitPriceUsd,
       if (stopLossPriceUsd != null) 'stopLossPriceUsd': stopLossPriceUsd,
       if (realizedPnlUsd != null) 'realizedPnlUsd': realizedPnlUsd,
@@ -220,6 +247,9 @@ abstract class Trade
       if (sellPriceUsd != null) 'sellPriceUsd': sellPriceUsd,
       if (sellTxHash != null) 'sellTxHash': sellTxHash,
       if (soldAt != null) 'soldAt': soldAt?.toJson(),
+      if (allTimeLowPriceUsd != null) 'allTimeLowPriceUsd': allTimeLowPriceUsd,
+      if (firstSellExecuted != null) 'firstSellExecuted': firstSellExecuted,
+      if (firstSellPriceUsd != null) 'firstSellPriceUsd': firstSellPriceUsd,
       if (takeProfitPriceUsd != null) 'takeProfitPriceUsd': takeProfitPriceUsd,
       if (stopLossPriceUsd != null) 'stopLossPriceUsd': stopLossPriceUsd,
       if (realizedPnlUsd != null) 'realizedPnlUsd': realizedPnlUsd,
@@ -255,6 +285,9 @@ class _TradeImpl extends Trade {
     double? sellPriceUsd,
     String? sellTxHash,
     DateTime? soldAt,
+    double? allTimeLowPriceUsd,
+    bool? firstSellExecuted,
+    double? firstSellPriceUsd,
     double? takeProfitPriceUsd,
     double? stopLossPriceUsd,
     double? realizedPnlUsd,
@@ -278,6 +311,9 @@ class _TradeImpl extends Trade {
          sellPriceUsd: sellPriceUsd,
          sellTxHash: sellTxHash,
          soldAt: soldAt,
+         allTimeLowPriceUsd: allTimeLowPriceUsd,
+         firstSellExecuted: firstSellExecuted,
+         firstSellPriceUsd: firstSellPriceUsd,
          takeProfitPriceUsd: takeProfitPriceUsd,
          stopLossPriceUsd: stopLossPriceUsd,
          realizedPnlUsd: realizedPnlUsd,
@@ -307,6 +343,9 @@ class _TradeImpl extends Trade {
     Object? sellPriceUsd = _Undefined,
     Object? sellTxHash = _Undefined,
     Object? soldAt = _Undefined,
+    Object? allTimeLowPriceUsd = _Undefined,
+    Object? firstSellExecuted = _Undefined,
+    Object? firstSellPriceUsd = _Undefined,
     Object? takeProfitPriceUsd = _Undefined,
     Object? stopLossPriceUsd = _Undefined,
     Object? realizedPnlUsd = _Undefined,
@@ -331,6 +370,15 @@ class _TradeImpl extends Trade {
       sellPriceUsd: sellPriceUsd is double? ? sellPriceUsd : this.sellPriceUsd,
       sellTxHash: sellTxHash is String? ? sellTxHash : this.sellTxHash,
       soldAt: soldAt is DateTime? ? soldAt : this.soldAt,
+      allTimeLowPriceUsd: allTimeLowPriceUsd is double?
+          ? allTimeLowPriceUsd
+          : this.allTimeLowPriceUsd,
+      firstSellExecuted: firstSellExecuted is bool?
+          ? firstSellExecuted
+          : this.firstSellExecuted,
+      firstSellPriceUsd: firstSellPriceUsd is double?
+          ? firstSellPriceUsd
+          : this.firstSellPriceUsd,
       takeProfitPriceUsd: takeProfitPriceUsd is double?
           ? takeProfitPriceUsd
           : this.takeProfitPriceUsd,

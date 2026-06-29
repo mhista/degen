@@ -62,6 +62,9 @@ import 'package:degenbot_server/src/services/intelligence/rugcheck_service.dart'
 import 'package:degenbot_server/src/services/intelligence/tokensniffer_service.dart';
 import 'package:degenbot_server/src/services/intelligence/chaingpt_service.dart';
 import 'package:degenbot_server/src/services/intelligence/onchain_forensics_service.dart';
+import 'package:degenbot_server/src/services/repository/user_repository.dart';
+import 'package:degenbot_server/src/services/repository/coin_candidate_repository.dart';
+import 'package:degenbot_server/src/services/scanning/auto_scanner_service.dart';
 import 'package:televerse/telegram.dart';
 import 'package:televerse/televerse.dart';
 
@@ -75,6 +78,7 @@ class DegenTelegramBot {
   late final TokenIntelligencePipeline _pipeline;
   late final CommandHandlers _commands;
   late final AiHandler _ai;
+  late final AutoScannerService _scanner;
 
   Future<void> start({required String webhookBaseUrl}) async {
     _log.info('Initialising Telegram service...');
@@ -92,8 +96,11 @@ class DegenTelegramBot {
         ? ChainGPTService(apiKey: Env.chainGptApiKey) 
         : null;
 
+    // ── Shared DexScreenerService instance (pipeline + scanner share it) ──
+    final dexScreener = DexScreenerService();
+
     _pipeline = TokenIntelligencePipeline(
-      dexScreenerService: DexScreenerService(),
+      dexScreenerService: dexScreener,
       goPlusService: GoPlusService(),
       rugCheckService: RugCheckService(apiKey: Env.rugCheckApiKey.isEmpty ? null : Env.rugCheckApiKey),
       tokenSnifferService: TokenSnifferService(apiKey: Env.tokenSnifferApiKey.isEmpty ? null : Env.tokenSnifferApiKey),
@@ -102,8 +109,16 @@ class DegenTelegramBot {
       onChainForensicsService: OnChainForensicsService(
         etherscanApiKey: Env.etherscanApiKey.isEmpty ? null : Env.etherscanApiKey,
         bscscanApiKey: Env.bscscanApiKey.isEmpty ? null : Env.bscscanApiKey,
-  
       ),
+    );
+
+    // ── Auto-scanner: background buy-signal loop ───────────────────────────
+    _scanner = AutoScannerService(
+      pipeline: _pipeline,
+      dexScreenerService: dexScreener,
+      userRepository: const UserRepository(),
+      coinCandidateRepository: const CoinCandidateRepository(),
+      messagingService: _adapter,
     );
 
     _commands = CommandHandlers(_telegramService.bot, _pipeline);
@@ -138,6 +153,11 @@ class DegenTelegramBot {
     // /webhooks/telegram route can actually process incoming updates.
     TelegramWebhookHandler(telegramService: _telegramService);
 
+    // ── Start the auto-scanner loop ───────────────────────────────────
+    // This fires the first scan cycle immediately, then every 30 minutes.
+    // If no users have the bot active, the scanner idles (no API calls).
+    _scanner.start();
+
     _log.info(
       'Telegram bot ready (${webhookUrl != null ? "webhook: $webhookUrl" : "long polling"})',
     );
@@ -147,6 +167,10 @@ class DegenTelegramBot {
   /// (trade notifications, scan alerts) from anywhere else in the codebase
   /// that shouldn't need to know it's specifically Telegram underneath.
   TelegramServiceAdapter get messaging => _adapter;
+
+  /// The background auto-scanner — exposes stats for /status and
+  /// start/stop control for /activate and /deactivate.
+  AutoScannerService get scanner => _scanner;
 
   /// Raw Televerse bot — only command_handlers.dart and ai_handler.dart
   /// should need this, for registering handlers and Telegram-specific

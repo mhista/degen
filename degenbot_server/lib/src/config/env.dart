@@ -81,6 +81,31 @@ abstract class Env {
       ? _Env.chainGptApiKey
       : Platform.environment['CHAINGPT_API_KEY'] ?? '';
 
+  // GoPlus authenticated API (HMAC-SHA256 signing)
+  // Register at https://gopluslabs.io — free tier included
+  @EnviedField(varName: 'GOPLUS_API_KEY', obfuscate: true, defaultValue: '')
+  static final String goPlusApiKey = _Env.goPlusApiKey.isNotEmpty
+      ? _Env.goPlusApiKey
+      : Platform.environment['GOPLUS_API_KEY'] ?? '';
+
+  @EnviedField(varName: 'GOPLUS_API_SECRET', obfuscate: true, defaultValue: '')
+  static final String goPlusApiSecret = _Env.goPlusApiSecret.isNotEmpty
+      ? _Env.goPlusApiSecret
+      : Platform.environment['GOPLUS_API_SECRET'] ?? '';
+
+  // Bitquery V2 — GraphQL on-chain data (Solana holders, DEX trades, wallet clustering)
+  // OAuth2 client credentials: POST https://oauth2.bitquery.io/oauth2/token
+  // Use the "Automatic" (server/app) credentials — 24h token, refresh on expiry
+  @EnviedField(varName: 'BITQUERY_CLIENT_ID', obfuscate: true, defaultValue: '')
+  static final String bitqueryClientId = _Env.bitqueryClientId.isNotEmpty
+      ? _Env.bitqueryClientId
+      : Platform.environment['BITQUERY_CLIENT_ID'] ?? '';
+
+  @EnviedField(varName: 'BITQUERY_CLIENT_SECRET', obfuscate: true, defaultValue: '')
+  static final String bitqueryClientSecret = _Env.bitqueryClientSecret.isNotEmpty
+      ? _Env.bitqueryClientSecret
+      : Platform.environment['BITQUERY_CLIENT_SECRET'] ?? '';
+
   // On-chain forensics (Layer 5) — free tier API keys
   @EnviedField(varName: 'ETHERSCAN_API_KEY', obfuscate: true, defaultValue: '')
   static final String etherscanApiKey = _Env.etherscanApiKey.isNotEmpty

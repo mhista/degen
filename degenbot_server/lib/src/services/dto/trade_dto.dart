@@ -2,6 +2,8 @@
 //
 // Supabase table: trades
 //
+// Supabase table: trades  (see docs/migrations/ for the full schema history)
+//
 //   create table trades (
 //     id                    bigserial primary key,
 //     user_id               bigint not null references users(id),
@@ -17,6 +19,11 @@
 //     sell_price_usd        numeric,
 //     sell_tx_hash          text,
 //     sold_at               timestamptz,
+//     -- ATL-based sell strategy (migration 002)
+//     all_time_low_price_usd  numeric,
+//     first_sell_executed     boolean,
+//     first_sell_price_usd    numeric,
+//     -- legacy TP/SL (kept as backstop)
 //     take_profit_price_usd numeric,
 //     stop_loss_price_usd   numeric,
 //     realized_pnl_usd      numeric,
@@ -60,6 +67,13 @@ class TradeDto extends BaseDto<Trade> {
       soldAt: row['sold_at'] != null
           ? DateTime.parse(row['sold_at'] as String)
           : null,
+      allTimeLowPriceUsd: row['all_time_low_price_usd'] != null
+          ? (row['all_time_low_price_usd'] as num).toDouble()
+          : null,
+      firstSellExecuted: row['first_sell_executed'] as bool?,
+      firstSellPriceUsd: row['first_sell_price_usd'] != null
+          ? (row['first_sell_price_usd'] as num).toDouble()
+          : null,
       takeProfitPriceUsd: row['take_profit_price_usd'] != null
           ? (row['take_profit_price_usd'] as num).toDouble()
           : null,
@@ -97,6 +111,12 @@ class TradeDto extends BaseDto<Trade> {
       if (model.sellPriceUsd != null) 'sell_price_usd': model.sellPriceUsd,
       if (model.sellTxHash != null) 'sell_tx_hash': model.sellTxHash,
       if (model.soldAt != null) 'sold_at': model.soldAt!.toIso8601String(),
+      if (model.allTimeLowPriceUsd != null)
+        'all_time_low_price_usd': model.allTimeLowPriceUsd,
+      if (model.firstSellExecuted != null)
+        'first_sell_executed': model.firstSellExecuted,
+      if (model.firstSellPriceUsd != null)
+        'first_sell_price_usd': model.firstSellPriceUsd,
       if (model.takeProfitPriceUsd != null)
         'take_profit_price_usd': model.takeProfitPriceUsd,
       if (model.stopLossPriceUsd != null)

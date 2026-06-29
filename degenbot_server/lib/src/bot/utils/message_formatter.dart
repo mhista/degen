@@ -11,6 +11,7 @@
 import 'package:degenbot_server/src/generated/protocol.dart';
 import 'package:degenbot_server/src/services/repository/feature_flags_repository.dart';
 import 'package:degenbot_server/src/services/intelligence/token_intelligence_report.dart';
+import 'package:degenbot_server/src/services/trading/position_monitor.dart';
 
 import '../../services/messaging/messaging_result.dart';
 
@@ -156,8 +157,11 @@ class MessageFormatter {
       buffer.writeln();
     }
 
-    buffer.writeln('🏆 *Verdict:* $verdictTag | *Score:* ${report.aiScore}/100');
-    buffer.writeln('🤖 _${_esc(report.aiReasoning)}_');
+    // Rule-based verdict — no AI score. The trader's rules made this call.
+    buffer.writeln('🏆 *Verdict:* $verdictTag');
+    if (report.aiReasoning.isNotEmpty) {
+      buffer.writeln('📋 _${_esc(report.aiReasoning)}_');
+    }
 
     final remainingFlags = report.flags.where((f) =>
         !(f.source == 'RugCheck' && f.message.toLowerCase().contains('insider'))).toList();
@@ -278,15 +282,41 @@ Use /help for all commands.
   static String positionsList(List<Trade> trades) {
     final buffer = StringBuffer('📂 *Open Positions (${trades.length})*\n\n');
 
+    // ATL state lives in PositionMonitor (in-memory). We read it from there
+    // rather than from Trade fields — those fields only exist in the generated
+    // model after running `serverpod generate` / `build_runner`.
+    final monitor = PositionMonitor.instance;
+
     for (final trade in trades) {
-      buffer.write(
-        '• *${trade.symbol}* (${trade.chain})\n'
-        '  Entry: \$${trade.buyPriceUsd.toStringAsFixed(6)}\n'
-        '  Spent: \$${trade.amountSpentUsd.toStringAsFixed(2)}\n'
-        '  TP: \$${trade.takeProfitPriceUsd?.toStringAsFixed(6) ?? "—"}  '
-        'SL: \$${trade.stopLossPriceUsd?.toStringAsFixed(6) ?? "—"}\n\n',
-      );
+      buffer.write('• *${trade.symbol}* (${trade.chain})\n');
+      buffer.write('  Entry: \$${trade.buyPriceUsd.toStringAsFixed(8)}\n');
+      buffer.write('  Spent: \$${trade.amountSpentUsd.toStringAsFixed(2)}\n');
+
+      // Pull live ATL state from PositionMonitor
+      final pos = monitor.allPositions
+          .where((p) => p.contractAddress.toLowerCase() == trade.contractAddress.toLowerCase())
+          .firstOrNull;
+
+      if (pos != null && !pos.firstSellExecuted) {
+        final target = pos.allTimeLowPriceUsd * 9.0; // +800% from ATL
+        buffer.write('  ATL: \$${pos.allTimeLowPriceUsd.toStringAsFixed(8)}\n');
+        buffer.write('  🎯 First sell target: \$${target.toStringAsFixed(8)} (+800% from ATL)\n');
+      } else if (pos != null && pos.firstSellExecuted && pos.firstSellPriceUsd != null) {
+        final rebuyTarget = pos.firstSellPriceUsd! * 0.20; // -80% from peak
+        buffer.write('  ✅ First sell @ \$${pos.firstSellPriceUsd!.toStringAsFixed(8)}\n');
+        buffer.write('  🔄 Rebuy target: \$${rebuyTarget.toStringAsFixed(8)} (-80% from sell)\n');
+      } else {
+        // PositionMonitor doesn't have this in memory (e.g. after server restart)
+        buffer.write('  Backstop SL: \$${trade.stopLossPriceUsd?.toStringAsFixed(8) ?? "—"}\n');
+        buffer.write('  _ATL tracking: not active — use /activate to resume_\n');
+      }
+
+      buffer.writeln();
     }
+
+    buffer.writeln(
+      '_Exit strategy: +800% from ATL → first sell, then -80% retrace → rebuy_',
+    );
 
     return buffer.toString();
   }
@@ -387,44 +417,102 @@ _"Set daily limit to 5"_
     return buffer.toString();
   }
 
+  // ── SCANNER BUY SIGNAL NOTIFICATION ───────────────────────────────────────
+  // Sent proactively by AutoScannerService when the rule engine approves a
+  // token. This is intentionally shorter than tokenAnalysisReport — it's a
+  // push alert, not a full deep-dive. The user can tap "Full Report" to see
+  // the complete analysis.
+  static String buySignalNotification(TokenIntelligenceReport report) {
+    final chainLabel = report.chain.toUpperCase();
+    final name = _esc(report.tokenName);
+    final symbol = _esc(report.tokenSymbol);
+    final m = report.market;
+
+    final buffer = StringBuffer();
+    buffer.writeln('🚨 *SCANNER ALERT — $chainLabel*');
+    buffer.writeln();
+    buffer.writeln('📌 *$name ($symbol)*');
+    buffer.writeln();
+
+    if (m != null) {
+      buffer.writeln(
+        '💰 MCap: ${_fmtUsd(m.marketCapUsd)} | Liq: ${_fmtUsd(m.liquidityUsd)}',
+      );
+      buffer.writeln(
+        '📉 24h: ${_signed(m.priceChange24h)}% | Vol: ${_fmtUsd(m.volumeUsd24h)}',
+      );
+      buffer.writeln(
+        '⏰ Age: ${_ageLabel(m.tokenAgeHours)} | B:${_fmtCompact(m.buyCount24h)} S:${_fmtCompact(m.sellCount24h)}',
+      );
+      buffer.writeln();
+    }
+
+    if (report.aiReasoning.isNotEmpty) {
+      // First 200 chars of reasoning — keep the push notification concise
+      final preview = report.aiReasoning.length > 200
+          ? '${report.aiReasoning.substring(0, 200)}...'
+          : report.aiReasoning;
+      buffer.writeln('🏆 _${_esc(preview)}_');
+      buffer.writeln();
+    }
+
+    buffer.write('📌 `${report.contractAddress}`');
+
+    return buffer.toString();
+  }
+
   // ── TRADE NOTIFICATION ─────────────────────────────────────────────────────
-  // Sent to user when the bot opens a trade
-  static String tradeBoughtNotification(Trade trade, String aiReasoning) {
+  // Sent to user when the bot opens a trade.
+  // ATL starts at entry — PositionMonitor updates it live as price moves down.
+  // We do NOT read trade.allTimeLowPriceUsd here — that field only exists after
+  // `serverpod generate` runs. Instead we derive the initial target from entry.
+  static String tradeBoughtNotification(Trade trade, String ruleReasoning) {
+    final entryPrice = trade.buyPriceUsd;
+    final initialTarget = entryPrice * 9.0; // +800% from entry = worst-case first sell target
+
     return '''
 🛒 *Trade Opened*
 
 *Coin:*    ${trade.symbol} (${trade.chain})
 *Spent:*   \$${trade.amountSpentUsd.toStringAsFixed(2)} (${trade.amountSpentNative.toStringAsFixed(4)} native)
-*Entry:*   \$${trade.buyPriceUsd.toStringAsFixed(8)}
-*Target:*  \$${trade.takeProfitPriceUsd?.toStringAsFixed(8) ?? "—"} (+${trade.takeProfitPriceUsd != null ? (((trade.takeProfitPriceUsd! / trade.buyPriceUsd) - 1) * 100).toStringAsFixed(0) : "?"}%)
-*Stop:*    \$${trade.stopLossPriceUsd?.toStringAsFixed(8) ?? "—"}
+*Entry:*   \$${entryPrice.toStringAsFixed(8)}
+*ATL:*     = Entry (tracking starts now)
+*🎯 First sell target:* \$${initialTarget.toStringAsFixed(8)} (+800% from ATL — improves as ATL drops)
+*🛑 Backstop SL:*  \$${trade.stopLossPriceUsd?.toStringAsFixed(8) ?? "—"}
 *Tx:*      `${_truncate(trade.buyTxHash ?? "pending", 12)}...`
 
-🤖 *AI reasoning:*
-_${aiReasoning}_
+📋 *Why the rules approved this:*
+_${ruleReasoning}_
+
+_After first sell, watching for -80% retrace → rebuy signal._
 ''';
   }
 
-  // Sent to user when a trade closes
+  // Sent to user when a sell is executed (first sell, rebuy, or close)
   static String tradeClosedNotification(Trade trade) {
     final pnl = trade.realizedPnlUsd ?? 0;
     final roi = trade.roiPercent ?? 0;
     final emoji = pnl >= 0 ? '🎉' : '😔';
     final reason = switch (trade.closeReason) {
-      'take_profit' => '🎯 Take profit hit',
-      'stop_loss'   => '🛑 Stop loss triggered',
-      'manual'      => '🤚 Closed manually',
-      _             => 'Closed',
+      'first_sell_800'  => '🎯 +800% from ATL — first sell executed',
+      'stop_loss'       => '🛑 Backstop stop-loss triggered',
+      'manual'          => '🤚 Closed manually',
+      'rebuy'           => '🔄 Rebuy executed after -80% retrace',
+      _                 => 'Closed',
     };
 
+    final nextStepNote = trade.closeReason == 'first_sell_800'
+        ? '\n_Watching for -80% retrace from this sell price for rebuy..._'
+        : '';
+
     return '''
-$emoji *Trade Closed — $reason*
+$emoji *${trade.closeReason == 'rebuy' ? 'Rebuy Executed' : 'Trade Closed'} — $reason*
 
 *Coin:*  ${trade.symbol}
 *Entry:* \$${trade.buyPriceUsd.toStringAsFixed(8)}
 *Exit:*  \$${trade.sellPriceUsd?.toStringAsFixed(8) ?? "—"}
 *PnL:*   ${pnl >= 0 ? '+' : ''}\$${pnl.toStringAsFixed(2)}
-*ROI:*   ${roi >= 0 ? '+' : ''}${roi.toStringAsFixed(2)}%
+*ROI:*   ${roi >= 0 ? '+' : ''}${roi.toStringAsFixed(2)}%$nextStepNote
 ''';
   }
 

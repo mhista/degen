@@ -268,14 +268,30 @@ final String? _apiKey;
       ));
     }
 
+    // ── Deployer holding % ────────────────────────────────────────────────
+    // BUG FIX: data['creatorBalance'] is a RAW token count, NOT a percentage.
+    // Using it directly produced values like 7,364,533,083% which failed Gate 2.
+    // Fix: look up the creator address in topHolders (which already has `pct`
+    // as a real 0–100 percentage). If not in the list they hold < top-N
+    // threshold → effectively 0% (safe).
+    final creatorAddr = data['creator'] as String?;
+    double deployerPct = 0;
+    if (creatorAddr != null) {
+      final creatorHolder = topHolders.firstWhere(
+        (h) => (h['address'] as String?)?.toLowerCase() == creatorAddr.toLowerCase(),
+        orElse: () => <String, dynamic>{},
+      );
+      deployerPct = (creatorHolder['pct'] as num?)?.toDouble() ?? 0;
+    }
+
     final ownership = OwnershipData(
       isLiquidityLocked: isLocked,
       liquidityLockPlatform: lockPlatform,
       liquidityLockDaysRemaining: null,
       isOwnershipRenounced: mintAuthority == null && freezeAuthority == null,
       top10HoldersPercent: top10Pct,
-      deployerHoldingPercent: (data['creatorBalance'] as num?)?.toDouble() ?? 0,
-      creatorAddress: data['creator'] as String?,
+      deployerHoldingPercent: deployerPct,
+      creatorAddress: creatorAddr,
     );
 
     final totalHolders = (markets.isNotEmpty

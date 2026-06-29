@@ -1,25 +1,29 @@
 // risk_manager_service.dart
 //
 // THE GATE. Every trade the bot wants to make passes through here FIRST.
-// If this service says no, nothing gets bought — no matter how confident
-// the AI's score was.
+// If this service says no, nothing gets bought — no matter how clean
+// the rule engine's verdict was.
 //
 // PLAIN ENGLISH — WHAT THIS CHECKS, IN ORDER:
 //   1. Is the bot even active for this user?
 //   2. Has the user hit their daily trade limit already?
-//   3. Does the wallet have enough balance to trade at all?
-//   4. What's the MAXIMUM this specific trade is allowed to be,
+//   3. Is the macro context blocking buys? (BTC dumping hard)
+//   4. Does the wallet have enough balance to trade at all?
+//   5. What's the MAXIMUM this specific trade is allowed to be,
 //      based on the user's risk percentage setting?
-//   5. Calculate the actual take-profit and stop-loss prices for
-//      this specific token, based on its current price and the
-//      user's percentage preferences.
+//   6. Set the backstop stop-loss price (catastrophic floor only —
+//      the PRIMARY exit is the ATL-based 800% sell via PositionMonitor).
 //
-// WHY THIS IS SEPARATE FROM THE AI SCORING ENGINE:
-//   The AI answers "is this a good coin?" The risk manager answers
-//   "even if it's a good coin, how much should we risk, and are we
-//   even allowed to trade right now?" Mixing these two questions
-//   together is how bots end up betting too much on a single
-//   "obviously great" trade.
+// HOW THE SELL STRATEGY WORKS NOW:
+//   The old design set a fixed take-profit % above entry.
+//   The trader's actual strategy tracks the All-Time Low (ATL) after
+//   buying and sells at +800% FROM ATL — not from entry. This is handled
+//   live by PositionMonitor, not here.
+//
+//   What we set here: a backstop stop-loss as a catastrophic floor
+//   (e.g. -70% from entry). The ATL strategy handles the normal case;
+//   the stop-loss handles total collapse. NO fixed take-profit is set
+//   because the 800%/ATL exit is dynamic.
 //
 // DAILY RESET:
 //   trades_today resets to 0 once per UTC day. We check-and-reset lazily
@@ -31,6 +35,7 @@ import 'package:logging/logging.dart';
 import 'package:degenbot_server/src/generated/protocol.dart';
 import 'package:degenbot_server/src/services/repository/trade_repository.dart';
 import 'package:degenbot_server/src/services/repository/user_repository.dart';
+import 'package:degenbot_server/src/services/trading/macro_context_service.dart';
 import 'risk_decision.dart';
 
 final _log = Logger('RiskManagerService');
@@ -48,7 +53,7 @@ class RiskManagerService {
   // ── MAIN ENTRY POINT ──────────────────────────────────────────────────────
 
   /// Evaluate whether a proposed trade is allowed, and if so, exactly how
-  /// much to spend and what TP/SL prices to set.
+  /// much to spend and what backstop stop-loss to set.
   ///
   /// [walletBalanceNative] — current wallet balance in the chain's native
   /// currency (SOL/ETH/BNB). The CALLER fetches this from the chain
@@ -58,6 +63,10 @@ class RiskManagerService {
   ///
   /// [nativePriceUsd] — price of SOL/ETH/BNB itself, in USD.
   /// [tokenPriceUsd] — price of the token being considered, in USD.
+  ///
+  /// NOTE: No take-profit price is set here. The primary exit strategy
+  /// (+800% from ATL) is managed dynamically by PositionMonitor.
+  /// This service only sets the catastrophic stop-loss floor.
   Future<RiskDecision> evaluateTrade({
     required int telegramId,
     required double walletBalanceNative,
@@ -82,6 +91,18 @@ class RiskManagerService {
 
     // ── CHECK 2: Daily trade limit ─────────────────────────────────────────
     final profile = await _getProfileWithDailyReset(user.id!);
+
+    // ── CHECK 2b: Macro context — is BTC dumping? ──────────────────────────
+    // The trader's rule: don't buy degen tokens when BTC is in freefall.
+    // MacroContextService tracks this live and can be paused by the analyst.
+    final macroPauseReason = MacroContextService.instance.shouldHoldBuying();
+    if (macroPauseReason != null) {
+      return RiskDecision.rejected(
+        'Macro pause: $macroPauseReason\n'
+        'Use /macro status to see current conditions, '
+        'or /macro bull to override if you\'re confident.',
+      );
+    }
 
     if (profile.tradesToday >= profile.dailyTradeLimit) {
       return RiskDecision.rejected(
@@ -128,27 +149,40 @@ class RiskManagerService {
       );
     }
 
-    // ── CHECK 5: Calculate TP/SL prices for THIS token ──────────────────────
-    final takeProfitPrice =
-        tokenPriceUsd * (1 + profile.defaultTakeProfitPercent / 100.0);
+    // ── CHECK 5: Set the backstop stop-loss ─────────────────────────────────
+    // The PRIMARY exit is +800% from ATL, managed by PositionMonitor.
+    // This stop-loss is a CATASTROPHIC FLOOR only — it triggers if the
+    // token collapses completely before we ever get an ATL-based sell.
+    // Default: -70% from entry (degen tokens are volatile — we give them room).
+    // User can adjust via /risk stoploss <percent>.
     final stopLossPrice =
         tokenPriceUsd * (1 - profile.defaultStopLossPercent / 100.0);
 
+    // NO take-profit price set here — that's handled by PositionMonitor
+    // at +800% from ATL. Setting a fixed TP here would conflict with the
+    // ATL strategy and could close trades too early.
+
     _log.info(
       'Trade APPROVED for telegramId=$telegramId: '
-      '${maxTradeNative.toStringAsFixed(4)} native (\$${approvedAmountUsd.toStringAsFixed(2)}), '
-      'TP=\$${takeProfitPrice.toStringAsFixed(8)} SL=\$${stopLossPrice.toStringAsFixed(8)}',
+      '${maxTradeNative.toStringAsFixed(4)} native (\$${approvedAmountUsd.toStringAsFixed(2)}) | '
+      'Backstop SL=\$${stopLossPrice.toStringAsFixed(8)} | '
+      'Primary exit: +800% from ATL via PositionMonitor',
     );
+
+    // Caution warning doesn't block the trade but should be shown to the user.
+    final cautionWarning = MacroContextService.instance.cautionWarning();
 
     return RiskDecision(
       approved: true,
-      reason: 'Trade approved: ${profile.maxTradePercent.toStringAsFixed(0)}% '
+      reason: '${cautionWarning != null ? "$cautionWarning\n" : ""}'
+          'Trade approved: ${profile.maxTradePercent.toStringAsFixed(0)}% '
           'of available balance (${profile.tradesToday + 1}/${profile.dailyTradeLimit} '
-          'trades today).',
+          'trades today). '
+          'Exit strategy: +800% from ATL → first sell, then watch for -80% rebuy.',
       approvedAmountNative: maxTradeNative,
       approvedAmountUsd: approvedAmountUsd,
-      takeProfitPriceUsd: takeProfitPrice,
-      stopLossPriceUsd: stopLossPrice,
+      takeProfitPriceUsd: null, // Set dynamically by PositionMonitor
+      stopLossPriceUsd: stopLossPrice, // Backstop floor only
     );
   }
 
